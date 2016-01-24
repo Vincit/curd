@@ -10,35 +10,37 @@
 
 ;; ================ DB functions =======================
 
-(defn insert! [conn table data entities-fn]
+(defn insert! [{:keys [conn table data entities-fn]
+                :or {entities-fn identity}}]
   "Wrapper for java.jdbc's insert! function.
   Input conn can be either db's spec or transaction.
 
   entities-fn transforms columns' and table's names to desired db format.
 
   Inserts record and returns it back. Keywords are converted to clojure format."
-  (let [result (j/insert! conn table data :entities (or entities-fn identity))]
-    (condp = (count result)
-           0 []
-           1 (->> result
-                  first
-                  ->kebab-case)
-           2 (->> result
-                  (map ->kebab-case)
-                  vec))))
+  (->> (j/insert! conn table data :entities entities-fn)
+       first
+       ->kebab-case))
 
-(defn do-query [{:keys [conn query result-set-fn row-fn]}]
+(defn do-query [{:keys [conn query result-set-fn row-fn]
+                 :or {result-set-fn identity row-fn identity}}]
   "Wrapper for java.jdbc's query function.
   Input conn can be either db's spec or transaction.
   Takes optional result-set-fn and row-fn processing functions."
   (j/query conn query :identifiers ->dash
-           :result-set-fn (or result-set-fn identity)
-           :row-fn (or row-fn identity)))
+           :result-set-fn result-set-fn
+           :row-fn row-fn))
 
-(defn execute! [conn query]
+(defn execute! [{:keys [conn query]}]
   "Wrapper for java.jdbc's execute! function.
   Input conn can be either db's spec or transaction"
   (j/execute! conn query))
+
+(defn delete! [{:keys [conn table query]}]
+  "Wrapper for java.jdbc's delete! function.
+  Inputs are db's spec or transaction, table and sql query
+  with parameters."
+  (j/delete! conn table query))
 
 (defmacro in-transaction
   [binding & body]
@@ -65,7 +67,10 @@
 (defcrudmethod :create! [{:keys [db table data]}]
                "Inserts single row to database and returns created row."
                (try
-                 (insert! db table data ->underscore)
+                 (insert! {:conn        db
+                           :table       table
+                           :data        data
+                           :entities-fn ->underscore})
                  (catch SQLException e
                    (j/print-sql-exception-chain e)
                    (fail :create!))))
@@ -83,8 +88,9 @@
                Assumes that query is designed in a way that it returns only one row.
                Should be used for queries by id or some other unique identifier."
                (try
-                 (do-query {:conn db :query query
-                            :result-set-fn first})
+                 (do-query {:conn           db
+                            :query          query
+                            :result-set-fn  first})
                  (catch SQLException e
                    (j/print-sql-exception-chain e)
                    (fail :find-one))))
@@ -93,25 +99,40 @@
                "Updates data based on specified query.
                Returns a sequence of the number of rows updated."
                (try
-                 (execute! db query)
+                 (execute! {:conn  db
+                            :query query})
                  (catch SQLException e
                    (j/print-sql-exception-chain e)
                    (fail :update!))))
+
+(defcrudmethod :delete! [{:keys [db table query]}]
+               "Deletes data from table based on specified query."
+               (try
+                 (delete! {:conn  db
+                           :table table
+                           :query query})
+                 (catch SQLException e
+                   (j/print-sql-exception-chain e)
+                   (fail :delete!))))
 
 (defcrudmethod :update-or-insert! [{:keys [db table data query]}]
                "Updates row if it exists or creates new."
                (try
                  (in-transaction [t-con db]
-                                 (let [result (execute! t-con query)]
+                                 (let [result (execute! {:conn  t-con
+                                                         :query query})]
                                    (if (zero? (first result))
-                                     (insert! t-con table data ->underscore)
+                                     (insert! {:conn        t-con
+                                               :table       table
+                                               :data        data
+                                               :entities-fn ->underscore})
                                      data)))
                  (catch SQLException e
                    (j/print-sql-exception-chain e)
                    (fail :update-or-insert!))))
 
 
-;; ================ Simple helpers  ==================
+;; ================ Simple public helpers  ==================
 
 (defn prepare-create-map [db table data]
   "Prepares a map for :create! crud method"
@@ -124,6 +145,12 @@
   "Prepares a map for any query crud method"
   {:method  method
    :db      db
+   :query   sql})
+
+(defn prepare-delete-map [db method table sql]
+  {:method  method
+   :db      db
+   :table   table
    :query   sql})
 
 (defn prepare-create-or-update-map [db method table data sql]

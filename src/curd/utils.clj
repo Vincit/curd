@@ -7,7 +7,7 @@
       (zipmap (vals m))))
 
 (def ^:const generic-fail-message
-  "crud method failed. Check the SQL Exception description above")
+  " crud method failed. Check the SQL Exception description above")
 
 (defn fail [method]
   "Throws generic exception."
