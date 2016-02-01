@@ -70,11 +70,11 @@ You can generate queries with [HoneySql](https://github.com/jkk/honeysql) for ex
 #### Out of the box
 
 Curd has following methods supported out of the box
-* :create!
-* :find-one
-* :find-all
-* :update!
-* :update-or-insert!
+- `:create!`
+- `:find-one`
+- `:find-all`
+- `:update!`
+- `:update-or-insert!`
 
 Curd's api also has helper methods, that make your crud calls even cleaner than in examples above.
 
@@ -92,10 +92,10 @@ Same code for Create operation can look like this:
 ```
 
 All helper methods are: 
-* prepare-create-map
-* prepare-query-map
-* prepare-create-or-update-map
-* prepare-delete-map
+- `prepare-create-map`
+- `prepare-query-map`
+- `prepare-create-or-update-map`
+- `prepare-delete-map`
 
 It is your choice whether you want to use helpers or plain data!
 
