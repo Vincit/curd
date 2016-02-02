@@ -5,12 +5,15 @@ Curd is heavily customizable and library agnostic.
 Usually we use the same set of CRUD methods all over again and again. Life would so much easier, if we could have a single 
 interface to perform all our queries, inserts and so on. That's exactly what Curd offers.
 
+## Latest Version
+
+[![Clojars Project](https://img.shields.io/clojars/v/vincit/curd.svg)](https://clojars.org/vincit/curd)
+
 ## Usage
 
 Curd doesn't know anything about underlying database. It doesn't care about the way you generate queries either. All it needs
 is database's spec, sql with parameters (just as like java.jdbc) and occasionally database's table name.
 For example. you can generate queries with [HoneySql](https://github.com/jkk/honeysql). 
-
 
 
 ### Creating
