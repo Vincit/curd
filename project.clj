@@ -1,6 +1,6 @@
-(defproject vinct/curd "0.1.0"
+(defproject vincit/curd "0.1.0"
   :description "Easy and sweet crud without hassle"
-  :url "http://github.com/vincit/crud"
+  :url "https://github.com/vincit/curd"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :min-lein-version "2.0.0"
