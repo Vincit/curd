@@ -8,8 +8,8 @@ interface to perform all our queries, inserts and so on. That's exactly what Cur
 ## Usage
 
 Curd doesn't know anything about underlying database. It doesn't care about the way you generate queries either. All it needs
-is database's spec, sql with parameters (just as like java.jdbc) and occasionally database's t table name.
-You can generate queries with [HoneySql](https://github.com/jkk/honeysql) for example. 
+is database's spec, sql with parameters (just as like java.jdbc) and occasionally database's table name.
+For example. you can generate queries with [HoneySql](https://github.com/jkk/honeysql). 
 
 
 
@@ -69,14 +69,14 @@ You can generate queries with [HoneySql](https://github.com/jkk/honeysql) for ex
 
 #### Out of the box
 
-Curd has following methods supported out of the box
+Curd has following methods supported out of the box: 
 - `:create!`
 - `:find-one`
 - `:find-all`
 - `:update!`
 - `:update-or-insert!`
 
-Curd's api also has helper methods, that make your crud calls even cleaner than in examples above.
+Curd's api also has helper methods, which make your crud calls even cleaner than in examples above.
 
 Same code for Create operation can look like this:
 
