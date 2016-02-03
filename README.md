@@ -1,5 +1,7 @@
 # curd
 
+[![Build Status](https://travis-ci.org/Vincit/curd.svg?branch=master)](https://travis-ci.org/Vincit/curd)
+
 A Clojure wrapper around [java.jdbc](https://github.com/clojure/java.jdbc) making CRUD operations hassle-free and as simple as Clojure's data structures are.
 Curd is heavily customizable and library agnostic.
 Usually we use the same set of CRUD methods all over again and again. Life would so much easier, if we could have a single 
