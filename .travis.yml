@@ -1,1 +1,12 @@
 language: clojure
+
+services:
+  - postgresql
+
+addons:
+    postgresql: "9.4"
+
+before_script:
+  - psql -c "CREATE USER curd_test WITH PASSWORD 'curd_test';" -U postgres
+  - psql -c 'create database curd_test;' -U postgres
+  - psql -c "GRANT ALL PRIVILEGES ON DATABASE curd_test to curd_test;" -U postgres

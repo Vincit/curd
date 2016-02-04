@@ -4,7 +4,7 @@
             [ragtime.jdbc :as ragtime]
             [ragtime.repl :as repl]))
 
-(def db "jdbc:postgresql://localhost:5433/curd_test?user=curd_test&password=curd_test")
+(def db "jdbc:postgresql://localhost/curd_test?user=curd_test&password=curd_test")
 
 (def config
   {:datastore   (ragtime/sql-database db)
