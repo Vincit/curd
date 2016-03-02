@@ -28,6 +28,11 @@
                 :last-name  "Petka"
                 :country    "Finland"})
 
+(def user-data-2 {:username   "petkajanis"
+                  :first-name "Petka"
+                  :last-name  "Janis"
+                  :country    "Finland"})
+
 (deftest create!
   (testing "create! method returns created row"
     (let [result (->> user-data
@@ -51,6 +56,40 @@
                   (curd/prepare-query-map db :find-one)
                   (curd/do!)) (assoc user-data :user-id 1))))))
 
+(deftest find-all
+  (testing "Should return two rows"
+    (do
+      (doall (map #(->> %1
+                        (curd/prepare-create-map db :users)
+                        (curd/do!)) (vector user-data user-data-2)))
+      (is (= (->> ["SELECT * from users"]
+                  (curd/prepare-query-map db :find-all)
+                  (curd/do!)) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2)))))))
+
+(deftest find-all-with-result-set-fn
+  (testing "Should return only first row according to result-set-fn"
+    (do
+      (doall (map #(->> %1
+                        (curd/prepare-create-map db :users)
+                        (curd/do!)) (vector user-data user-data-2)))
+      (is (= (->> {:method        :find-all
+                   :db            db
+                   :query         ["SELECT * from users"]
+                   :result-set-fn first}
+                  (curd/do!)) (assoc user-data :user-id 1))))))
+
+(deftest find-all-with-row-fn
+  (testing "Should return all rows without :user-id according to row-fn"
+    (do
+      (doall (map #(->> %1
+                        (curd/prepare-create-map db :users)
+                        (curd/do!)) (vector user-data user-data-2)))
+      (is (= (->> {:method  :find-all
+                   :db      db
+                   :query   ["SELECT * from users"]
+                   :row-fn  #(dissoc %1 :user-id)}
+                  (curd/do!)) (vector user-data user-data-2))))))
+
 (deftest update!
   (testing "Should update row"
     (do
@@ -71,6 +110,6 @@
                 (curd/prepare-delete-map db :delete! :users)
                 (curd/do!)) [1]))
     (is (empty? (->> ["SELECT * from users"]
-                (curd/prepare-query-map db :find-all)
-                (curd/do!))))))
+                     (curd/prepare-query-map db :find-all)
+                     (curd/do!))))))
 

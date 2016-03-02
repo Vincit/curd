@@ -22,14 +22,13 @@
        first
        ->kebab-case))
 
-(defn do-query [{:keys [conn query result-set-fn row-fn]
-                 :or {result-set-fn identity row-fn identity}}]
+(defn do-query [{:keys [conn query result-set-fn row-fn]}]
   "Wrapper for java.jdbc's query function.
   Input conn can be either db's spec or transaction.
   Takes optional result-set-fn and row-fn processing functions."
   (j/query conn query :identifiers ->dash
-           :result-set-fn result-set-fn
-           :row-fn row-fn))
+           :result-set-fn (or result-set-fn doall)
+           :row-fn (or row-fn identity)))
 
 (defn execute! [{:keys [conn query]}]
   "Wrapper for java.jdbc's execute! function.
@@ -75,10 +74,13 @@
                    (j/print-sql-exception-chain e)
                    (fail :create!))))
 
-(defcrudmethod :find-all [{:keys [db query]}]
+(defcrudmethod :find-all [{:keys [db query result-set-fn row-fn]}]
                "Executes specified query and returns all result rows."
                (try
-                 (do-query {:conn db :query query})
+                 (do-query {:conn           db
+                            :query          query
+                            :result-set-fn  result-set-fn
+                            :row-fn         row-fn})
                  (catch SQLException e
                    (j/print-sql-exception-chain e)
                    (fail :find-all))))
