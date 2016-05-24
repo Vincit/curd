@@ -17,18 +17,22 @@
 
   entities-fn transforms columns' and table's names to desired db format.
 
-  Inserts record and returns it back. Keywords are converted to clojure format."
-  (->> (j/insert! conn table data :entities entities-fn)
-       first
-       ->kebab-case))
+  Inserts record and returns it back. Keywords are converted to clojure format.
+  Supports creation of multiple rows, if supplied data is vector."
+  (if (map? data)
+    (->> (j/insert! conn table data {:entities entities-fn})
+         first
+         ->kebab-case)
+    (->> (j/insert-multi! conn table data {:entities entities-fn})
+         (map #(->kebab-case %)))))
 
 (defn do-query [{:keys [conn query result-set-fn row-fn]}]
   "Wrapper for java.jdbc's query function.
   Input conn can be either db's spec or transaction.
   Takes optional result-set-fn and row-fn processing functions."
-  (j/query conn query :identifiers ->dash
-           :result-set-fn (or result-set-fn doall)
-           :row-fn (or row-fn identity)))
+  (j/query conn query {:identifiers   ->dash
+                       :result-set-fn (or result-set-fn doall)
+                       :row-fn        (or row-fn identity)}))
 
 (defn execute! [{:keys [conn query]}]
   "Wrapper for java.jdbc's execute! function.

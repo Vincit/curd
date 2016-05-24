@@ -44,7 +44,15 @@
     (is (thrown-with-msg? Exception #":create! crud method failed. Check the SQL Exception description above"
                           (->> (assoc user-data :not-existing "123")
                                (curd/prepare-create-map db :users)
-                               (curd/do!))))))
+                               (curd/do!)))))
+
+  (testing "saving multiple rows, should return rows"
+    (let [result (->> [user-data user-data-2]
+                      (curd/prepare-create-map db :users)
+                      (curd/do!))]
+      (is (seq? result))
+      (is (= (count result) 2))
+      (is (= ["janispetka" "petkajanis"] (reduce #(conj %1 (:username %2)) [] result))))))
 
 (deftest find-one
   (testing "Should return found row"
