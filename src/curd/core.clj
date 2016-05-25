@@ -76,85 +76,85 @@
 ;; ================ Basic CRUD API ==================
 
 (defcrudmethod :create! [{:keys [db table data]}]
-               "Inserts single row to database and returns created row."
-               (try
-                 (insert! {:conn        db
-                           :table       table
-                           :data        data
-                           :entities-fn ->underscore})
-                 (catch SQLException e
-                   (j/print-sql-exception-chain e)
-                   (fail :create!))))
+  "Inserts single row to database and returns created row."
+  (try
+    (insert! {:conn        db
+              :table       table
+              :data        data
+              :entities-fn ->underscore})
+    (catch SQLException e
+      (j/print-sql-exception-chain e)
+      (fail :create!))))
 
 (defcrudmethod :find-all [{:keys [db query result-set-fn row-fn]}]
-               "Executes specified query and returns all result rows."
-               (try
-                 (do-query {:conn           db
-                            :query          query
-                            :result-set-fn  result-set-fn
-                            :row-fn         row-fn})
-                 (catch SQLException e
-                   (j/print-sql-exception-chain e)
-                   (fail :find-all))))
+  "Executes specified query and returns all result rows."
+  (try
+    (do-query {:conn           db
+               :query          query
+               :result-set-fn  result-set-fn
+               :row-fn         row-fn})
+    (catch SQLException e
+      (j/print-sql-exception-chain e)
+      (fail :find-all))))
 
 (defcrudmethod :find-one-by-id [{:keys [db table pk-value pk-name result-set-fn entities-fn identifiers-fn] :as opts}]
-               "Executes a simple find-one-by-id query without need to generate custom sql query."
-               (try
-                 (find-one-by-id (-> opts
-                                     (merge {:entities-fn    (or entities-fn ->underscore)
-                                             :result-set-fn  (or result-set-fn identity)
-                                             :identifiers-fn (or identifiers-fn ->dash)})))
-                 (catch SQLException e
-                   (j/print-sql-exception-chain e)
-                   (fail :find-one-by-id))))
+  "Executes a simple find-one-by-id query without need to generate custom sql query."
+  (try
+    (find-one-by-id (-> opts
+                        (merge {:entities-fn    (or entities-fn ->underscore)
+                                :result-set-fn  (or result-set-fn identity)
+                                :identifiers-fn (or identifiers-fn ->dash)})))
+    (catch SQLException e
+      (j/print-sql-exception-chain e)
+      (fail :find-one-by-id))))
 
 (defcrudmethod :find-one [{:keys [db query]}]
-               "Executes specified query and returns only first row.
-               Assumes that query is designed in a way that it returns only one row.
-               Should be used for queries by id or some other unique identifier."
-               (try
-                 (do-query {:conn           db
-                            :query          query
-                            :result-set-fn  first})
-                 (catch SQLException e
-                   (j/print-sql-exception-chain e)
-                   (fail :find-one))))
+  "Executes specified query and returns only first row.
+  Assumes that query is designed in a way that it returns only one row.
+  Should be used for queries by id or some other unique identifier."
+  (try
+    (do-query {:conn           db
+               :query          query
+               :result-set-fn  first})
+    (catch SQLException e
+      (j/print-sql-exception-chain e)
+      (fail :find-one))))
 
 (defcrudmethod :update! [{:keys [db query]}]
-               "Updates data based on specified query.
-               Returns a sequence of the number of rows updated."
-               (try
-                 (execute! {:conn  db
-                            :query query})
-                 (catch SQLException e
-                   (j/print-sql-exception-chain e)
-                   (fail :update!))))
+  "Updates data based on specified query.
+  Returns a sequence of the number of rows updated."
+  (try
+    (execute! {:conn  db
+               :query query})
+    (catch SQLException e
+      (j/print-sql-exception-chain e)
+      (fail :update!))))
 
 (defcrudmethod :delete! [{:keys [db table query]}]
-               "Deletes data from table based on specified query."
-               (try
-                 (delete! {:conn  db
-                           :table table
-                           :query query})
-                 (catch SQLException e
-                   (j/print-sql-exception-chain e)
-                   (fail :delete!))))
+  "Deletes data from table based on specified query."
+  (try
+    (delete! {:conn  db
+              :table table
+              :query query})
+    (catch SQLException e
+      (j/print-sql-exception-chain e)
+      (fail :delete!))))
 
 (defcrudmethod :update-or-insert! [{:keys [db table data query]}]
-               "Updates row if it exists or creates new."
-               (try
-                 (in-transaction [t-con db]
-                                 (let [result (execute! {:conn  t-con
-                                                         :query query})]
-                                   (if (zero? (first result))
-                                     (insert! {:conn        t-con
-                                               :table       table
-                                               :data        data
-                                               :entities-fn ->underscore})
-                                     data)))
-                 (catch SQLException e
-                   (j/print-sql-exception-chain e)
-                   (fail :update-or-insert!))))
+  "Updates row if it exists or creates new."
+  (try
+    (in-transaction [t-con db]
+      (let [result (execute! {:conn  t-con
+                              :query query})]
+        (if (zero? (first result))
+          (insert! {:conn        t-con
+                    :table       table
+                    :data        data
+                    :entities-fn ->underscore})
+          data)))
+    (catch SQLException e
+      (j/print-sql-exception-chain e)
+      (fail :update-or-insert!))))
 
 
 ;; ================ Simple public helpers  ==================
