@@ -45,6 +45,14 @@
   with parameters."
   (j/delete! conn table query))
 
+(defn find-one-by-id [{:keys [db table key-value key-name result-set-fn entities-fn identifiers-fn]}]
+  "Wrapper for java.jdbc's get-by-id function.
+  Inputs are db, required table and private key value,
+  as well as optional private key name (default is :id) and data set processing functions."
+  (j/get-by-id db table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
+                                                     :entities      (or entities-fn identity)
+                                                     :identifiers   (or identifiers-fn identity)}))
+
 (defmacro in-transaction
   [binding & body]
   `(j/with-db-transaction ~binding ~@body))
@@ -88,6 +96,17 @@
                  (catch SQLException e
                    (j/print-sql-exception-chain e)
                    (fail :find-all))))
+
+(defcrudmethod :find-one-by-id [{:keys [db table pk-value pk-name result-set-fn entities-fn identifiers-fn] :as opts}]
+               "Executes a simple find-one-by-id query without need to generate custom sql query."
+               (try
+                 (find-one-by-id (-> opts
+                                     (merge {:entities-fn    (or entities-fn ->underscore)
+                                             :result-set-fn  (or result-set-fn identity)
+                                             :identifiers-fn (or identifiers-fn ->dash)})))
+                 (catch SQLException e
+                   (j/print-sql-exception-chain e)
+                   (fail :find-one-by-id))))
 
 (defcrudmethod :find-one [{:keys [db query]}]
                "Executes specified query and returns only first row.

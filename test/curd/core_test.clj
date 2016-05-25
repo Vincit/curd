@@ -64,6 +64,19 @@
                   (curd/prepare-query-map db :find-one)
                   (curd/do!)) (assoc user-data :user-id 1))))))
 
+(deftest find-one-by-id
+  (testing "Should find row and return it"
+    (let [user-data-with-id (assoc user-data :user-id 20)]
+      (do (->> user-data-with-id
+               (curd/prepare-create-map db :users)
+               (curd/do!))
+          (is (= (-> {:method     :find-one-by-id
+                      :db         db
+                      :table      :users
+                      :key-value  20
+                      :key-name   :user-id}
+                     (curd/do!)) user-data-with-id))))))
+
 (deftest find-all
   (testing "Should return two rows"
     (do
