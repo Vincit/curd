@@ -32,6 +32,8 @@ For example. you can generate queries with [HoneySql](https://github.com/jkk/hon
     
 ```
 
+Supplied data to `create!` method can be map or vector of maps.
+
 ### Reading
 
 ```clj
@@ -77,6 +79,7 @@ For example. you can generate queries with [HoneySql](https://github.com/jkk/hon
 Curd has following methods supported out of the box: 
 - `:create!`
 - `:find-one`
+- `:find-one-by-id`
 - `:find-all`
 - `:update!`
 - `:update-or-insert!`
