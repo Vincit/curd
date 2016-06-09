@@ -113,21 +113,22 @@ Not satisfied with existing methods? Just add new method to `do!` multimethod us
 Here is example for `:update-or-insert!` method:
 
 ```clj
-(defcrudmethod :update-or-insert! [{:keys [db table data query]}]
-               "Updates row if it exists or creates new."
-               (try
-                 (in-transaction [t-con db]
-                                 (let [result (execute! {:conn  t-con
-                                                         :query query})]
-                                   (if (zero? (first result))
-                                     (insert! {:conn        t-con
-                                               :table       table
-                                               :data        data
-                                               :entities-fn ->underscore})
-                                     data)))
-                 (catch SQLException e
-                   (j/print-sql-exception-chain e)
-                   (fail :update-or-insert!))))
+(defcrudmethod :update-or-insert!
+  "Updates row if it exists or creates new."
+  [{:keys [db table data query]}]
+  (try
+    (in-transaction [t-con db]
+      (let [result (execute! {:conn  t-con
+                              :query query})]
+        (if (zero? (first result))
+          (insert! {:conn        t-con
+                    :table       table
+                    :data        data
+                    :entities-fn ->underscore})
+          data)))
+    (catch SQLException e
+      (j/print-sql-exception-chain e)
+      (fail :update-or-insert!))))
 ```
 
 ## License

@@ -34,6 +34,14 @@
                   :country    "Finland"})
 
 (deftest create!
+  (testing "Invalid db-spec, should throw validation exception"
+    (is (thrown? Exception (->> user-data
+                                (curd/prepare-create-map {:invalid "map"} :users)
+                                (curd/do!)))))
+  (testing "Supplied table name is string, should throw validation exception"
+    (is (thrown? Exception (->> user-data
+                                (curd/prepare-create-map db "users")
+                                (curd/do!)))))
   (testing "create! method returns created row"
     (let [result (->> user-data
                       (curd/prepare-create-map db :users)
@@ -55,12 +63,24 @@
       (is (= ["janispetka" "petkajanis"] (reduce #(conj %1 (:username %2)) [] result))))))
 
 (deftest find-one
+  (testing "Invalid db-spec, should throw validation exception"
+    (is (thrown? Exception (->> ["SELECT * from users WHERE username = ?" "janispetka"]
+                                (curd/prepare-query-map {:invalid "map"} :find-one)
+                                (curd/do!)))))
   (testing "Should return found row"
     (do
       (->> user-data
            (curd/prepare-create-map db :users)
            (curd/do!))
       (is (= (->> ["SELECT * from users WHERE username = ?" "janispetka"]
+                  (curd/prepare-query-map db :find-one)
+                  (curd/do!)) (assoc user-data :user-id 1)))))
+  (testing "Query by username and id, should return found row"
+    (do
+      (->> user-data
+           (curd/prepare-create-map db :users)
+           (curd/do!))
+      (is (= (->> ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]
                   (curd/prepare-query-map db :find-one)
                   (curd/do!)) (assoc user-data :user-id 1))))))
 
@@ -133,4 +153,3 @@
     (is (empty? (->> ["SELECT * from users"]
                      (curd/prepare-query-map db :find-all)
                      (curd/do!))))))
-

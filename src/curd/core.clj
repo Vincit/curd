@@ -1,6 +1,8 @@
 (ns curd.core
   (:use [curd.utils])
-  (:require [clojure.java.jdbc :as j])
+  (:require [clojure.java.jdbc :as j]
+            [clojure.spec :as s]
+            [curd.spec.core :as spec])
   (:import (java.sql SQLException)))
 
 
@@ -10,8 +12,7 @@
 
 ;; ================ DB functions =======================
 
-(defn insert! [{:keys [conn table data entities-fn]
-                :or {entities-fn identity}}]
+(defn insert!
   "Wrapper for java.jdbc's insert! function.
   Input conn can be either db's spec or transaction.
 
@@ -19,6 +20,8 @@
 
   Inserts record and returns it back. Keywords are converted to clojure format.
   Supports creation of multiple rows, if supplied data is vector."
+  [{:keys [conn table data entities-fn]
+    :or {entities-fn identity}}]
   (if (map? data)
     (->> (j/insert! conn table data {:entities entities-fn})
          first
@@ -26,32 +29,68 @@
     (->> (j/insert-multi! conn table data {:entities entities-fn})
          (map #(->kebab-case %)))))
 
-(defn do-query [{:keys [conn query result-set-fn row-fn]}]
+(s/fdef insert!
+  :args (s/? ::spec/insert!-args)
+  :ret (s/or :map map?
+             :vector vector?
+             :seq seq?))
+
+(s/instrument #'insert!)
+
+(defn do-query
   "Wrapper for java.jdbc's query function.
   Input conn can be either db's spec or transaction.
   Takes optional result-set-fn and row-fn processing functions."
+  [{:keys [conn query result-set-fn row-fn]}]
   (j/query conn query {:identifiers   ->dash
                        :result-set-fn (or result-set-fn doall)
                        :row-fn        (or row-fn identity)}))
 
-(defn execute! [{:keys [conn query]}]
+(s/fdef do-query
+  :args (s/? ::spec/do-query-args)
+  :ret (s/or :vector vector?
+             :map map?
+             :seq seq?))
+
+(s/instrument #'do-query)
+
+(defn execute!
   "Wrapper for java.jdbc's execute! function.
   Input conn can be either db's spec or transaction"
+  [{:keys [conn query]}]
   (j/execute! conn query))
 
-(defn delete! [{:keys [conn table query]}]
+(s/fdef execute!
+  :args (s/? ::spec/execute!-args))
+
+(s/instrument #'execute!)
+
+(defn delete!
   "Wrapper for java.jdbc's delete! function.
   Inputs are db's spec or transaction, table and sql query
   with parameters."
+  [{:keys [conn table query]}]
   (j/delete! conn table query))
 
-(defn find-one-by-id [{:keys [db table key-value key-name result-set-fn entities-fn identifiers-fn]}]
+(s/fdef delete!
+  :args (s/? ::spec/delete!-args))
+
+(s/instrument #'delete!)
+
+(defn find-one-by-id
   "Wrapper for java.jdbc's get-by-id function.
-  Inputs are db, required table and private key value,
+  Inputs are conn, required table and private key value,
   as well as optional private key name (default is :id) and data set processing functions."
-  (j/get-by-id db table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
-                                                     :entities      (or entities-fn identity)
-                                                     :identifiers   (or identifiers-fn identity)}))
+  [{:keys [conn table key-value key-name result-set-fn entities-fn identifiers-fn]}]
+  (j/get-by-id conn table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
+                                                       :entities      (or entities-fn identity)
+                                                       :identifiers   (or identifiers-fn identity)}))
+
+(s/fdef find-one-by-id
+  :args (s/? ::spec/find-one-by-id-args)
+  :ret (s/? map?))
+
+(s/instrument #'find-one-by-id)
 
 (defmacro in-transaction
   [binding & body]
@@ -61,22 +100,28 @@
 
 (defmulti do! :method)
 
-(defmacro defcrudmethod [method arglist & more]
+(defmacro defcrudmethod
   "Adds new method to do! multimethod.
 
   Inputs:
 
   method  - name of method (keyword)
+  doc     - docstring
   arglist - arguments
   more    - function to execute"
+  [method doc arglist & more]
   (let [kw (keyword (name method))]
-    `(defmethod do! ~kw ~(vec arglist) ~@more)))
-
+    `(defmethod do! ~kw ~(vec arglist) ~@doc ~@more)))
+;
+(s/fdef defcrudmethod
+  :args (s/cat :method-name keyword? :doc string? :arguments vector? :body ::s/any)
+  :ret ::spec/multi-fn)
 
 ;; ================ Basic CRUD API ==================
 
-(defcrudmethod :create! [{:keys [db table data]}]
+(defcrudmethod :create!
   "Inserts single row to database and returns created row."
+  [{:keys [db table data]}]
   (try
     (insert! {:conn        db
               :table       table
@@ -86,32 +131,38 @@
       (j/print-sql-exception-chain e)
       (fail :create!))))
 
-(defcrudmethod :find-all [{:keys [db query result-set-fn row-fn]}]
+(defcrudmethod :find-all
   "Executes specified query and returns all result rows."
+  [{:keys [db query result-set-fn row-fn]}]
   (try
     (do-query {:conn           db
                :query          query
-               :result-set-fn  result-set-fn
-               :row-fn         row-fn})
+               :result-set-fn  (or result-set-fn doall)
+               :row-fn         (or row-fn identity)})
     (catch SQLException e
       (j/print-sql-exception-chain e)
       (fail :find-all))))
 
-(defcrudmethod :find-one-by-id [{:keys [db table pk-value pk-name result-set-fn entities-fn identifiers-fn] :as opts}]
+(defcrudmethod :find-one-by-id
   "Executes a simple find-one-by-id query without need to generate custom sql query."
+  [{:keys [db table key-value key-name result-set-fn entities-fn identifiers-fn]}]
   (try
-    (find-one-by-id (-> opts
-                        (merge {:entities-fn    (or entities-fn ->underscore)
-                                :result-set-fn  (or result-set-fn identity)
-                                :identifiers-fn (or identifiers-fn ->dash)})))
+    (find-one-by-id  {:conn           db
+                      :table          table
+                      :key-value      key-value
+                      :key-name       key-name
+                      :entities-fn    (or entities-fn ->underscore)
+                      :result-set-fn  (or result-set-fn identity)
+                      :identifiers-fn (or identifiers-fn ->dash)})
     (catch SQLException e
       (j/print-sql-exception-chain e)
       (fail :find-one-by-id))))
 
-(defcrudmethod :find-one [{:keys [db query]}]
+(defcrudmethod :find-one
   "Executes specified query and returns only first row.
   Assumes that query is designed in a way that it returns only one row.
   Should be used for queries by id or some other unique identifier."
+  [{:keys [db query]}]
   (try
     (do-query {:conn           db
                :query          query
@@ -120,9 +171,10 @@
       (j/print-sql-exception-chain e)
       (fail :find-one))))
 
-(defcrudmethod :update! [{:keys [db query]}]
+(defcrudmethod :update!
   "Updates data based on specified query.
   Returns a sequence of the number of rows updated."
+  [{:keys [db query]}]
   (try
     (execute! {:conn  db
                :query query})
@@ -130,8 +182,9 @@
       (j/print-sql-exception-chain e)
       (fail :update!))))
 
-(defcrudmethod :delete! [{:keys [db table query]}]
+(defcrudmethod :delete!
   "Deletes data from table based on specified query."
+  [{:keys [db table query]}]
   (try
     (delete! {:conn  db
               :table table
@@ -140,8 +193,9 @@
       (j/print-sql-exception-chain e)
       (fail :delete!))))
 
-(defcrudmethod :update-or-insert! [{:keys [db table data query]}]
+(defcrudmethod :update-or-insert!
   "Updates row if it exists or creates new."
+  [{:keys [db table data query]}]
   (try
     (in-transaction [t-con db]
       (let [result (execute! {:conn  t-con
@@ -159,15 +213,17 @@
 
 ;; ================ Simple public helpers  ==================
 
-(defn prepare-create-map [db table data]
+(defn prepare-create-map
   "Prepares a map for :create! crud method"
+  [db table data]
   {:method :create!
    :db     db
    :table  table
    :data   data})
 
-(defn prepare-query-map [db method sql]
+(defn prepare-query-map
   "Prepares a map for any query crud method"
+  [db method sql]
   {:method  method
    :db      db
    :query   sql})
@@ -178,8 +234,9 @@
    :table   table
    :query   sql})
 
-(defn prepare-create-or-update-map [db method table data sql]
+(defn prepare-create-or-update-map
   "Prepares a map for create or update crud method"
+  [db method table data sql]
   {:method  method
    :table   table
    :db      db
