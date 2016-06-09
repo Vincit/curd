@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :min-lein-version "2.0.0"
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.9.0-alpha4"]
                  [org.clojure/java.jdbc "0.6.1"]
                  [camel-snake-kebab "0.4.0"]
                  [ragtime "0.6.0"]
