@@ -6,6 +6,11 @@
 
 (def db "jdbc:postgresql://localhost/curd_test?user=curd_test&password=curd_test")
 
+(def db-driver-manager {:subprotocol "postgresql"
+                        :subname "//localhost/curd_test"
+                        :user "curd_test"
+                        :password "curd_test"})
+
 (def config
   {:datastore   (ragtime/sql-database db)
    :migrations  (ragtime/load-resources "migrations")})
@@ -38,15 +43,23 @@
     (is (thrown? Exception (->> user-data
                                 (curd/prepare-create-map {:invalid "map"} :users)
                                 (curd/do!)))))
+
   (testing "Supplied table name is string, should throw validation exception"
     (is (thrown? Exception (->> user-data
                                 (curd/prepare-create-map db "users")
                                 (curd/do!)))))
+
   (testing "create! method returns created row"
     (let [result (->> user-data
                       (curd/prepare-create-map db :users)
                       (curd/do!))]
       (is (= result (assoc user-data :user-id 1)))))
+
+  (testing "create! method returns created row. Using driver manager db config"
+    (let [result (->> user-data
+                      (curd/prepare-create-map db-driver-manager :users)
+                      (curd/do!))]
+      (is (= result (assoc user-data :user-id 2)))))
 
   (testing "data has not existing column, should throw exception"
     (is (thrown-with-msg? Exception #":create! crud method failed. Check the SQL Exception description above"
@@ -75,6 +88,7 @@
       (is (= (->> ["SELECT * from users WHERE username = ?" "janispetka"]
                   (curd/prepare-query-map db :find-one)
                   (curd/do!)) (assoc user-data :user-id 1)))))
+  
   (testing "Query by username and id, should return found row"
     (do
       (->> user-data

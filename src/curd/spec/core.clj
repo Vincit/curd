@@ -29,7 +29,8 @@
 (s/def ::subname string?)
 (s/def ::classname string?)
 (s/def ::driver-manager
-  (s/keys :req-un [::subprotocol ::subname ::classname]))
+  (s/keys :req-un [::subprotocol ::subname]
+          :opt-un [::classname]))
 
 ;; db-spec Driver Manager (alternative)
 (s/def ::dbtype string?)
