@@ -6,6 +6,6 @@
   :min-lein-version "2.0.0"
   :dependencies [[org.clojure/clojure "1.9.0-alpha7"]
                  [org.clojure/java.jdbc "0.6.1"]
-                 [camel-snake-kebab "0.4.0"]
-                 [ragtime "0.6.0"]
-                 [org.postgresql/postgresql "9.4-1201-jdbc41"]])
+                 [camel-snake-kebab "0.4.0"]]
+  :profiles {:dev {:dependencies [[ragtime "0.6.0"]
+                                  [org.postgresql/postgresql "9.4-1201-jdbc41"]]}})
