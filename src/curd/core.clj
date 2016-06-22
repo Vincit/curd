@@ -20,14 +20,15 @@
 
   Inserts record and returns it back. Keywords are converted to clojure format.
   Supports creation of multiple rows, if supplied data is vector."
-  [{:keys [conn table data entities-fn]
+  [{:keys [conn-or-spec table data entities-fn]
     :or {entities-fn identity}}]
-  (if (map? data)
-    (->> (j/insert! conn table data {:entities entities-fn})
-         first
-         ->kebab-case)
-    (->> (j/insert-multi! conn table data {:entities entities-fn})
-         (map #(->kebab-case %)))))
+  (let [conn (:spec conn-or-spec)]
+    (if (map? data)
+      (->> (j/insert! (or conn conn-or-spec) table data {:entities entities-fn})
+           first
+           ->kebab-case)
+      (->> (j/insert-multi! (or conn conn-or-spec) table data {:entities entities-fn})
+           (map #(->kebab-case %))))))
 
 (s/fdef insert!
   :args (s/? ::spec/insert!-args)
@@ -41,10 +42,11 @@
   "Wrapper for java.jdbc's query function.
   Input conn can be either db's spec or transaction.
   Takes optional result-set-fn and row-fn processing functions."
-  [{:keys [conn query result-set-fn row-fn]}]
-  (j/query conn query {:identifiers   ->dash
-                       :result-set-fn (or result-set-fn doall)
-                       :row-fn        (or row-fn identity)}))
+  [{:keys [conn-or-spec query result-set-fn row-fn]}]
+  (let [conn (:spec conn-or-spec)]
+    (j/query (or conn conn-or-spec) query {:identifiers   ->dash
+                                           :result-set-fn (or result-set-fn doall)
+                                           :row-fn        (or row-fn identity)})))
 
 (s/fdef do-query
   :args (s/? ::spec/do-query-args)
@@ -57,8 +59,9 @@
 (defn execute!
   "Wrapper for java.jdbc's execute! function.
   Input conn can be either db's spec or transaction"
-  [{:keys [conn query]}]
-  (j/execute! conn query))
+  [{:keys [conn-or-spec query]}]
+  (let [conn (:spec conn-or-spec)]
+    (j/execute! (or conn conn-or-spec) query)))
 
 (s/fdef execute!
   :args (s/? ::spec/execute!-args))
@@ -69,8 +72,9 @@
   "Wrapper for java.jdbc's delete! function.
   Inputs are db's spec or transaction, table and sql query
   with parameters."
-  [{:keys [conn table query]}]
-  (j/delete! conn table query))
+  [{:keys [conn-or-spec table query]}]
+  (let [conn (:spec conn-or-spec)]
+    (j/delete! (or conn conn-or-spec) table query)))
 
 (s/fdef delete!
   :args (s/? ::spec/delete!-args))
@@ -81,10 +85,11 @@
   "Wrapper for java.jdbc's get-by-id function.
   Inputs are conn, required table and private key value,
   as well as optional private key name (default is :id) and data set processing functions."
-  [{:keys [conn table key-value key-name result-set-fn entities-fn identifiers-fn]}]
-  (j/get-by-id conn table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
-                                                       :entities      (or entities-fn identity)
-                                                       :identifiers   (or identifiers-fn identity)}))
+  [{:keys [conn-or-spec table key-value key-name result-set-fn entities-fn identifiers-fn]}]
+  (let [conn (:spec conn-or-spec)]
+    (j/get-by-id (or conn conn-or-spec) table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
+                                                                           :entities      (or entities-fn identity)
+                                                                           :identifiers   (or identifiers-fn identity)})))
 
 (s/fdef find-one-by-id
   :args (s/? ::spec/find-one-by-id-args)
@@ -123,10 +128,10 @@
   "Inserts single row to database and returns created row."
   [{:keys [db table data]}]
   (try
-    (insert! {:conn        db
-              :table       table
-              :data        data
-              :entities-fn ->underscore})
+    (insert! {:conn-or-spec db
+              :table        table
+              :data         data
+              :entities-fn  ->underscore})
     (catch SQLException e
       (j/print-sql-exception-chain e)
       (fail :create!))))
@@ -135,7 +140,7 @@
   "Executes specified query and returns all result rows."
   [{:keys [db query result-set-fn row-fn]}]
   (try
-    (do-query {:conn           db
+    (do-query {:conn-or-spec   db
                :query          query
                :result-set-fn  (or result-set-fn doall)
                :row-fn         (or row-fn identity)})
@@ -147,7 +152,7 @@
   "Executes a simple find-one-by-id query without need to generate custom sql query."
   [{:keys [db table key-value key-name result-set-fn entities-fn identifiers-fn]}]
   (try
-    (find-one-by-id  {:conn           db
+    (find-one-by-id  {:conn-or-spec   db
                       :table          table
                       :key-value      key-value
                       :key-name       key-name
@@ -164,7 +169,7 @@
   Should be used for queries by id or some other unique identifier."
   [{:keys [db query]}]
   (try
-    (do-query {:conn           db
+    (do-query {:conn-or-spec   db
                :query          query
                :result-set-fn  first})
     (catch SQLException e
@@ -176,8 +181,8 @@
   Returns a sequence of the number of rows updated."
   [{:keys [db query]}]
   (try
-    (execute! {:conn  db
-               :query query})
+    (execute! {:conn-or-spec  db
+               :query         query})
     (catch SQLException e
       (j/print-sql-exception-chain e)
       (fail :update!))))
@@ -186,9 +191,9 @@
   "Deletes data from table based on specified query."
   [{:keys [db table query]}]
   (try
-    (delete! {:conn  db
-              :table table
-              :query query})
+    (delete! {:conn-or-spec db
+              :table        table
+              :query        query})
     (catch SQLException e
       (j/print-sql-exception-chain e)
       (fail :delete!))))
@@ -198,13 +203,13 @@
   [{:keys [db table data query]}]
   (try
     (in-transaction [t-con db]
-      (let [result (execute! {:conn  t-con
-                              :query query})]
+      (let [result (execute! {:conn-or-spec   t-con
+                              :query          query})]
         (if (zero? (first result))
-          (insert! {:conn        t-con
-                    :table       table
-                    :data        data
-                    :entities-fn ->underscore})
+          (insert! {:conn-or-spec t-con
+                    :table        table
+                    :data         data
+                    :entities-fn  ->underscore})
           data)))
     (catch SQLException e
       (j/print-sql-exception-chain e)

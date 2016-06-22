@@ -72,6 +72,11 @@
 ;;db-spec String
 (s/def ::string string?)
 
+(s/def ::spec (s/keys ::req-un [::conn]))
+
+(s/def ::conn-or-spec (s/or :spec ::spec
+                            :conn ::conn))
+
 (s/def ::conn (s/or
                 ;; Connection
                 :connection-object ::connection-object
@@ -112,21 +117,21 @@
 ;; -------------- PUBLIC SPECS -----------------
 
 (s/def ::insert!-args
-  (s/keys :req-un [::conn ::table ::data]
+  (s/keys :req-un [::conn-or-spec ::table ::data]
           :opt-un [::entities-fn]))
 
 (s/def ::do-query-args
-  (s/keys :req-un [::conn ::query]
+  (s/keys :req-un [::conn-or-spec ::query]
           :opt-un [::result-set-fn ::row-fn]))
 
 (s/def ::execute!-args
-  (s/keys :req-un [::conn ::query]))
+  (s/keys :req-un [::conn-or-spec ::query]))
 
 (s/def ::delete!-args
-  (s/keys :req-un [::conn ::table ::query]))
+  (s/keys :req-un [::conn-or-spec ::table ::query]))
 
 (s/def ::find-one-by-id-args
-  (s/keys ::req-un [::db ::table ::key-value]
+  (s/keys ::req-un [::conn-or-spec ::table ::key-value]
           ::opt-un [::key-name ::result-set-fn ::entities-fn ::identifiers-fn]))
 
 (s/def ::multi-fn multi-fn?)

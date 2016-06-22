@@ -17,6 +17,7 @@ Curd doesn't know anything about underlying database. It doesn't care about the 
 is database's spec, sql with parameters (just as like java.jdbc) and occasionally database's table name.
 For example. you can generate queries with [HoneySql](https://github.com/jkk/honeysql). 
 
+Notice, that you can supply as `db` input parameter either connection, or map with `:spec` key, containing connection.
 
 ### Creating
 
@@ -110,25 +111,21 @@ It is your choice whether you want to use helpers or plain data!
 ## Customizing
 
 Not satisfied with existing methods? Just add new method to `do!` multimethod using `defcrudmethod` macro and off you go!
-Here is example for `:update-or-insert!` method:
+Here is example for `:find-one` method:
 
 ```clj
-(defcrudmethod :update-or-insert!
-  "Updates row if it exists or creates new."
-  [{:keys [db table data query]}]
+(defcrudmethod :find-one
+  "Executes specified query and returns only first row.
+  Assumes that query is designed in a way that it returns only one row.
+  Should be used for queries by id or some other unique identifier."
+  [{:keys [db query]}]
   (try
-    (in-transaction [t-con db]
-      (let [result (execute! {:conn  t-con
-                              :query query})]
-        (if (zero? (first result))
-          (insert! {:conn        t-con
-                    :table       table
-                    :data        data
-                    :entities-fn ->underscore})
-          data)))
+    (do-query {:conn-or-spec   db
+               :query          query
+               :result-set-fn  first})
     (catch SQLException e
       (j/print-sql-exception-chain e)
-      (fail :update-or-insert!))))
+      (fail :find-one))))
 ```
 
 ## License
