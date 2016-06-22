@@ -124,7 +124,7 @@ Here is example for `:find-one` method:
                :query          query
                :result-set-fn  first})
     (catch SQLException e
-      (j/print-sql-exception-chain e)
+      (print-sql-exception-chain e)
       (fail :find-one))))
 ```
 

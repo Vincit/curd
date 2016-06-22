@@ -101,6 +101,9 @@
   [binding & body]
   `(j/with-db-transaction ~binding ~@body))
 
+(defn print-sql-exception-chain [e]
+  (j/print-sql-exception-chain e))
+
 ;; ================ New CRUD Method Macro ==================
 
 (defmulti do! :method)
@@ -133,7 +136,7 @@
               :data         data
               :entities-fn  ->underscore})
     (catch SQLException e
-      (j/print-sql-exception-chain e)
+      (print-sql-exception-chain e)
       (fail :create!))))
 
 (defcrudmethod :find-all
@@ -145,7 +148,7 @@
                :result-set-fn  (or result-set-fn doall)
                :row-fn         (or row-fn identity)})
     (catch SQLException e
-      (j/print-sql-exception-chain e)
+      (print-sql-exception-chain e)
       (fail :find-all))))
 
 (defcrudmethod :find-one-by-id
@@ -160,7 +163,7 @@
                       :result-set-fn  (or result-set-fn identity)
                       :identifiers-fn (or identifiers-fn ->dash)})
     (catch SQLException e
-      (j/print-sql-exception-chain e)
+      (print-sql-exception-chain e)
       (fail :find-one-by-id))))
 
 (defcrudmethod :find-one
@@ -173,7 +176,7 @@
                :query          query
                :result-set-fn  first})
     (catch SQLException e
-      (j/print-sql-exception-chain e)
+      (print-sql-exception-chain e)
       (fail :find-one))))
 
 (defcrudmethod :update!
@@ -184,7 +187,7 @@
     (execute! {:conn-or-spec  db
                :query         query})
     (catch SQLException e
-      (j/print-sql-exception-chain e)
+      (print-sql-exception-chain e)
       (fail :update!))))
 
 (defcrudmethod :delete!
@@ -195,7 +198,7 @@
               :table        table
               :query        query})
     (catch SQLException e
-      (j/print-sql-exception-chain e)
+      (print-sql-exception-chain e)
       (fail :delete!))))
 
 (defcrudmethod :update-or-insert!
@@ -212,7 +215,7 @@
                     :entities-fn  ->underscore})
           data)))
     (catch SQLException e
-      (j/print-sql-exception-chain e)
+      (print-sql-exception-chain e)
       (fail :update-or-insert!))))
 
 
