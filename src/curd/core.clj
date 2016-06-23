@@ -118,7 +118,7 @@
   arglist - arguments
   more    - function to execute"
   [method doc arglist & more]
-  (let [kw (keyword (name method))]
+  (let [kw (->namespaced-keyword method)]
     `(defmethod do! ~kw ~(vec arglist) ~@doc ~@more)))
 ;
 (s/fdef defcrudmethod
@@ -127,7 +127,7 @@
 
 ;; ================ Basic CRUD API ==================
 
-(defcrudmethod :create!
+(defcrudmethod ::create!
   "Inserts single row to database and returns created row."
   [{:keys [db table data]}]
   (try
@@ -139,7 +139,7 @@
       (print-sql-exception-chain e)
       (fail :create!))))
 
-(defcrudmethod :find-all
+(defcrudmethod ::find-all
   "Executes specified query and returns all result rows."
   [{:keys [db query result-set-fn row-fn]}]
   (try
@@ -151,7 +151,7 @@
       (print-sql-exception-chain e)
       (fail :find-all))))
 
-(defcrudmethod :find-one-by-id
+(defcrudmethod ::find-one-by-id
   "Executes a simple find-one-by-id query without need to generate custom sql query."
   [{:keys [db table key-value key-name result-set-fn entities-fn identifiers-fn]}]
   (try
@@ -166,7 +166,7 @@
       (print-sql-exception-chain e)
       (fail :find-one-by-id))))
 
-(defcrudmethod :find-one
+(defcrudmethod ::find-one
   "Executes specified query and returns only first row.
   Assumes that query is designed in a way that it returns only one row.
   Should be used for queries by id or some other unique identifier."
@@ -179,7 +179,7 @@
       (print-sql-exception-chain e)
       (fail :find-one))))
 
-(defcrudmethod :update!
+(defcrudmethod ::update!
   "Updates data based on specified query.
   Returns a sequence of the number of rows updated."
   [{:keys [db query]}]
@@ -190,7 +190,7 @@
       (print-sql-exception-chain e)
       (fail :update!))))
 
-(defcrudmethod :delete!
+(defcrudmethod ::delete!
   "Deletes data from table based on specified query."
   [{:keys [db table query]}]
   (try
@@ -201,7 +201,7 @@
       (print-sql-exception-chain e)
       (fail :delete!))))
 
-(defcrudmethod :update-or-insert!
+(defcrudmethod ::update-or-insert!
   "Updates row if it exists or creates new."
   [{:keys [db table data query]}]
   (try
@@ -224,7 +224,7 @@
 (defn prepare-create-map
   "Prepares a map for :create! crud method"
   [db table data]
-  {:method :create!
+  {:method ::create!
    :db     db
    :table  table
    :data   data})

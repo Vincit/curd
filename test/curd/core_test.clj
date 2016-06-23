@@ -96,7 +96,7 @@
 (deftest find-one
   (testing "Invalid db-spec, should throw validation exception"
     (is (thrown? Exception (->> ["SELECT * from users WHERE username = ?" "janispetka"]
-                                (curd/prepare-query-map {:invalid "map"} :find-one)
+                                (curd/prepare-query-map {:invalid "map"} ::curd/find-one)
                                 (curd/do!)))))
   (testing "Should return found row. Using all kinds of db objects."
     (do
@@ -104,13 +104,13 @@
            (curd/prepare-create-map db :users)
            (curd/do!))
       (is (= (->> ["SELECT * from users WHERE username = ?" "janispetka"]
-                  (curd/prepare-query-map db :find-one)
+                  (curd/prepare-query-map db ::curd/find-one)
                   (curd/do!)) (assoc user-data :user-id 1)))
       (is (= (->> ["SELECT * from users WHERE username = ?" "janispetka"]
-                  (curd/prepare-query-map db-driver-manager :find-one)
+                  (curd/prepare-query-map db-driver-manager ::curd/find-one)
                   (curd/do!)) (assoc user-data :user-id 1)))
       (is (= (->> ["SELECT * from users WHERE username = ?" "janispetka"]
-                  (curd/prepare-query-map db-with-spec :find-one)
+                  (curd/prepare-query-map db-with-spec ::curd/find-one)
                   (curd/do!)) (assoc user-data :user-id 1)))
       ))
 
@@ -120,13 +120,13 @@
            (curd/prepare-create-map db :users)
            (curd/do!))
       (is (= (->> ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]
-                  (curd/prepare-query-map db :find-one)
+                  (curd/prepare-query-map db ::curd/find-one)
                   (curd/do!)) (assoc user-data :user-id 1)))
       (is (= (->> ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]
-                  (curd/prepare-query-map db-driver-manager :find-one)
+                  (curd/prepare-query-map db-driver-manager ::curd/find-one)
                   (curd/do!)) (assoc user-data :user-id 1)))
       (is (= (->> ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]
-                  (curd/prepare-query-map db-with-spec :find-one)
+                  (curd/prepare-query-map db-with-spec ::curd/find-one)
                   (curd/do!)) (assoc user-data :user-id 1)))
       )))
 
@@ -136,19 +136,19 @@
       (do (->> user-data-with-id
                (curd/prepare-create-map db :users)
                (curd/do!))
-          (is (= (-> {:method     :find-one-by-id
+          (is (= (-> {:method     ::curd/find-one-by-id
                       :db         db
                       :table      :users
                       :key-value  20
                       :key-name   :user-id}
                      (curd/do!)) user-data-with-id))
-          (is (= (-> {:method     :find-one-by-id
+          (is (= (-> {:method     ::curd/find-one-by-id
                       :db         db-driver-manager
                       :table      :users
                       :key-value  20
                       :key-name   :user-id}
                      (curd/do!)) user-data-with-id))
-          (is (= (-> {:method     :find-one-by-id
+          (is (= (-> {:method     ::curd/find-one-by-id
                       :db         db-with-spec
                       :table      :users
                       :key-value  20
@@ -163,13 +163,13 @@
                         (curd/prepare-create-map db :users)
                         (curd/do!)) (vector user-data user-data-2)))
       (is (= (->> ["SELECT * from users"]
-                  (curd/prepare-query-map db :find-all)
+                  (curd/prepare-query-map db ::curd/find-all)
                   (curd/do!)) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
       (is (= (->> ["SELECT * from users"]
-                  (curd/prepare-query-map db-driver-manager :find-all)
+                  (curd/prepare-query-map db-driver-manager ::curd/find-all)
                   (curd/do!)) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
       (is (= (->> ["SELECT * from users"]
-                  (curd/prepare-query-map db-with-spec :find-all)
+                  (curd/prepare-query-map db-with-spec ::curd/find-all)
                   (curd/do!)) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
       )))
 
@@ -179,17 +179,17 @@
       (doall (map #(->> %1
                         (curd/prepare-create-map db :users)
                         (curd/do!)) (vector user-data user-data-2)))
-      (is (= (->> {:method        :find-all
+      (is (= (->> {:method        ::curd/find-all
                    :db            db
                    :query         ["SELECT * from users"]
                    :result-set-fn first}
                   (curd/do!)) (assoc user-data :user-id 1)))
-      (is (= (->> {:method        :find-all
+      (is (= (->> {:method        ::curd/find-all
                    :db            db-driver-manager
                    :query         ["SELECT * from users"]
                    :result-set-fn first}
                   (curd/do!)) (assoc user-data :user-id 1)))
-      (is (= (->> {:method        :find-all
+      (is (= (->> {:method        ::curd/find-all
                    :db            db-with-spec
                    :query         ["SELECT * from users"]
                    :result-set-fn first}
@@ -202,17 +202,17 @@
       (doall (map #(->> %1
                         (curd/prepare-create-map db :users)
                         (curd/do!)) (vector user-data user-data-2)))
-      (is (= (->> {:method  :find-all
+      (is (= (->> {:method  ::curd/find-all
                    :db      db
                    :query   ["SELECT * from users"]
                    :row-fn  #(dissoc %1 :user-id)}
                   (curd/do!)) (vector user-data user-data-2)))
-      (is (= (->> {:method  :find-all
+      (is (= (->> {:method  ::curd/find-all
                    :db      db-driver-manager
                    :query   ["SELECT * from users"]
                    :row-fn  #(dissoc %1 :user-id)}
                   (curd/do!)) (vector user-data user-data-2)))
-      (is (= (->> {:method  :find-all
+      (is (= (->> {:method  ::curd/find-all
                    :db      db-with-spec
                    :query   ["SELECT * from users"]
                    :row-fn  #(dissoc %1 :user-id)}
@@ -226,13 +226,13 @@
            (curd/prepare-create-map db :users)
            (curd/do!))
       (is (= (->> ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]
-                  (curd/prepare-query-map db :update!)
+                  (curd/prepare-query-map db ::curd/update!)
                   (curd/do!)) [1]))
       (is (= (->> ["UPDATE users SET country = ? where user_id = ?" "Finland" 1]
-                  (curd/prepare-query-map db-driver-manager :update!)
+                  (curd/prepare-query-map db-driver-manager ::curd/update!)
                   (curd/do!)) [1]))
       (is (= (->> ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]
-                  (curd/prepare-query-map db-with-spec :update!)
+                  (curd/prepare-query-map db-with-spec ::curd/update!)
                   (curd/do!)) [1]))
       )))
 
@@ -243,10 +243,10 @@
            (curd/prepare-create-map db :users)
            (curd/do!)))
     (is (= (->> ["user_id = ?" 1]
-                (curd/prepare-delete-map db :delete! :users)
+                (curd/prepare-delete-map db ::curd/delete! :users)
                 (curd/do!)) [1]))
     (is (empty? (->> ["SELECT * from users"]
-                     (curd/prepare-query-map db :find-all)
+                     (curd/prepare-query-map db ::curd/find-all)
                      (curd/do!)))))
   (testing "Should delete row, using db driver manager"
     (do
@@ -254,10 +254,10 @@
            (curd/prepare-create-map db-driver-manager :users)
            (curd/do!)))
     (is (= (->> ["user_id = ?" 2]
-                (curd/prepare-delete-map db-driver-manager :delete! :users)
+                (curd/prepare-delete-map db-driver-manager ::curd/delete! :users)
                 (curd/do!)) [1]))
     (is (empty? (->> ["SELECT * from users"]
-                     (curd/prepare-query-map db-driver-manager :find-all)
+                     (curd/prepare-query-map db-driver-manager ::curd/find-all)
                      (curd/do!)))))
   (testing "Should delete row, using object with db spec"
     (do
@@ -265,8 +265,8 @@
            (curd/prepare-create-map db-with-spec :users)
            (curd/do!)))
     (is (= (->> ["user_id = ?" 3]
-                (curd/prepare-delete-map db-with-spec :delete! :users)
+                (curd/prepare-delete-map db-with-spec ::curd/delete! :users)
                 (curd/do!)) [1]))
     (is (empty? (->> ["SELECT * from users"]
-                     (curd/prepare-query-map db-with-spec :find-all)
+                     (curd/prepare-query-map db-with-spec ::curd/find-all)
                      (curd/do!))))))

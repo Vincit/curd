@@ -9,8 +9,18 @@
   (testing "Input map already has kebab-case keys"
     (is (= (->kebab-case {:a-b 1 :b-c 2 :c-d 3}) {:a-b 1 :b-c 2 :c-d 3}))))
 
+(deftest test->namespaced-keyword
+  (testing "Should return namespaced keyword within same namespace"
+    (is (= (->namespaced-keyword ::method) :curd.utils-test/method)))
+  (testing "Should return namespaced keyword within other namespace"
+    (is (= (->namespaced-keyword :other.namespace/method) :other.namespace/method)))
+  (testing "Invalid input string, should throw spec validation exception"
+    (is (thrown? Exception (->namespaced-keyword "other.namespace/method") :other.namespace/method))))
+
 (deftest test-fail
-  (testing "Should throw exception for method :test"
-    (let [message (re-pattern (str ":test" generic-fail-message))]
+  (testing "Should throw exception for method ::test"
+    (let [message (re-pattern (str ":curd.utils-test/test" generic-fail-message))]
       (is (thrown-with-msg? Exception message
-          (fail :test))))))
+          (fail ::test)))))
+  (testing "Invalid string input, should throw spec validation exception"
+    (is (thrown? Exception (fail "test")))))

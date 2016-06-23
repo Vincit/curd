@@ -26,7 +26,7 @@ Notice, that you can supply as `db` input parameter either connection, or map wi
   (:require [curd.core :as c]))
 
 (defn save-user [db data]
-    (c/do! {:method   :create!
+    (c/do! {:method   ::c/create!
             :db       db
             :table    :users
             :data     data}))
@@ -42,7 +42,7 @@ Supplied data to `create!` method can be map or vector of maps.
   (:require [curd.core :as c]))
 
 (defn update-user [db sql-query]
-    (c/do! {:method   :find-all
+    (c/do! {:method   ::c/find-all
             :db       db
             :query    sql-query}))
     
@@ -55,7 +55,7 @@ Supplied data to `create!` method can be map or vector of maps.
   (:require [curd.core :as c]))
 
 (defn update-user [db sql-query]
-    (c/do! {:method   :update!
+    (c/do! {:method   ::c/update!
             :db       db
             :query    sql-query}))
     
@@ -68,7 +68,7 @@ Supplied data to `create!` method can be map or vector of maps.
   (:require [curd.core :as c]))
 
 (defn update-user [db table sql-query]
-    (c/do! {:method   :delete!
+    (c/do! {:method   ::c/delete!
             :db       db
             :table    table
             :query    sql-query}))
@@ -78,12 +78,12 @@ Supplied data to `create!` method can be map or vector of maps.
 #### Out of the box
 
 Curd has following methods supported out of the box: 
-- `:create!`
-- `:find-one`
-- `:find-one-by-id`
-- `:find-all`
-- `:update!`
-- `:update-or-insert!`
+- `::create!`
+- `::find-one`
+- `::find-one-by-id`
+- `::find-all`
+- `::update!`
+- `::update-or-insert!`
 
 Curd's api also has helper methods, which make your crud calls even cleaner than in examples above.
 
@@ -111,10 +111,10 @@ It is your choice whether you want to use helpers or plain data!
 ## Customizing
 
 Not satisfied with existing methods? Just add new method to `do!` multimethod using `defcrudmethod` macro and off you go!
-Here is example for `:find-one` method:
+Here is example for `::find-one` method:
 
 ```clj
-(defcrudmethod :find-one
+(defcrudmethod ::find-one
   "Executes specified query and returns only first row.
   Assumes that query is designed in a way that it returns only one row.
   Should be used for queries by id or some other unique identifier."
@@ -127,6 +127,9 @@ Here is example for `:find-one` method:
       (print-sql-exception-chain e)
       (fail :find-one))))
 ```
+
+Notice also, that namespaced keywords are used as names for crud methods! So you can as well write crudmethod with same name in other namespace, 
+and any collisions will be avoided.
 
 ## License
 
