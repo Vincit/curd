@@ -11,6 +11,8 @@ interface to perform all our queries, inserts and so on. That's exactly what Cur
 
 [![Clojars Project](https://img.shields.io/clojars/v/vincit/curd.svg)](https://clojars.org/vincit/curd)
 
+## [Changelog](https://github.com/Vincit/curd/blob/master/CHANGELOG.md)
+
 ## Usage
 
 Curd doesn't know anything about underlying database. It doesn't care about the way you generate queries either. All it needs
