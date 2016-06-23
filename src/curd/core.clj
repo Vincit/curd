@@ -137,7 +137,7 @@
               :entities-fn  ->underscore})
     (catch SQLException e
       (print-sql-exception-chain e)
-      (fail :create!))))
+      (fail ::create!))))
 
 (defcrudmethod ::find-all
   "Executes specified query and returns all result rows."
@@ -149,7 +149,7 @@
                :row-fn         (or row-fn identity)})
     (catch SQLException e
       (print-sql-exception-chain e)
-      (fail :find-all))))
+      (fail ::find-all))))
 
 (defcrudmethod ::find-one-by-id
   "Executes a simple find-one-by-id query without need to generate custom sql query."
@@ -164,7 +164,7 @@
                       :identifiers-fn (or identifiers-fn ->dash)})
     (catch SQLException e
       (print-sql-exception-chain e)
-      (fail :find-one-by-id))))
+      (fail ::find-one-by-id))))
 
 (defcrudmethod ::find-one
   "Executes specified query and returns only first row.
@@ -177,7 +177,7 @@
                :result-set-fn  first})
     (catch SQLException e
       (print-sql-exception-chain e)
-      (fail :find-one))))
+      (fail ::find-one))))
 
 (defcrudmethod ::update!
   "Updates data based on specified query.
@@ -188,7 +188,7 @@
                :query         query})
     (catch SQLException e
       (print-sql-exception-chain e)
-      (fail :update!))))
+      (fail ::update!))))
 
 (defcrudmethod ::delete!
   "Deletes data from table based on specified query."
@@ -199,7 +199,7 @@
               :query        query})
     (catch SQLException e
       (print-sql-exception-chain e)
-      (fail :delete!))))
+      (fail ::delete!))))
 
 (defcrudmethod ::update-or-insert!
   "Updates row if it exists or creates new."
@@ -216,13 +216,13 @@
           data)))
     (catch SQLException e
       (print-sql-exception-chain e)
-      (fail :update-or-insert!))))
+      (fail ::update-or-insert!))))
 
 
 ;; ================ Simple public helpers  ==================
 
 (defn prepare-create-map
-  "Prepares a map for :create! crud method"
+  "Prepares a map for ::create! crud method"
   [db table data]
   {:method ::create!
    :db     db

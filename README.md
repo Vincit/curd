@@ -127,7 +127,7 @@ Here is example for `::find-one` method:
                :result-set-fn  first})
     (catch SQLException e
       (print-sql-exception-chain e)
-      (fail :find-one))))
+      (fail ::find-one))))
 ```
 
 Notice also, that namespaced keywords are used as names for crud methods! So you can as well write crudmethod with same name in other namespace, 

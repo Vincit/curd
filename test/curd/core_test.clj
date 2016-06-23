@@ -71,7 +71,7 @@
       (is (= result (assoc user-data :user-id 3)))))
 
   (testing "data has not existing column, should throw exception"
-    (is (thrown-with-msg? Exception #":create! crud method failed. Check the SQL Exception description above"
+    (is (thrown-with-msg? Exception #":curd.core/create! crud method failed. Check the SQL Exception description above"
                           (->> (assoc user-data :not-existing "123")
                                (curd/prepare-create-map db :users)
                                (curd/do!)))))
