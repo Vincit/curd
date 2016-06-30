@@ -215,9 +215,9 @@
   [{:keys [db table data query]}]
   (try
     (in-transaction [conn db {:read-only? false}]
-      (let [result  (do-query {:conn-or-spec   conn
-                               :query          query
-                               :result-set-fn  first})]
+      (let [result (do-query {:conn-or-spec   conn
+                              :query          query
+                              :result-set-fn  first})]
         (if-not result
           (insert! {:conn-or-spec conn
                     :table        table

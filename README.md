@@ -133,6 +133,34 @@ Here is example for `::find-one` method:
 Notice also, that namespaced keywords are used as names for crud methods! So you can as well write crudmethod with same name in other namespace, 
 and any collisions will be avoided.
 
+
+### Transactions 
+
+Transactions are handled with `in-transaction` macro, which is a wrapper around java.jdbc's `with-db-transaction` macro. It can be used like this:
+
+```clj
+(defcrudmethod ::update-or-insert!
+  "Updates row if it exists or creates new."
+  [{:keys [db table data query]}]
+  (try
+    (in-transaction [conn db {:read-only? false}]
+      (let [result (do-query {:conn-or-spec   conn
+                              :query          query
+                              :result-set-fn  first})]
+        (if-not result
+          (insert! {:conn-or-spec conn
+                    :table        table
+                    :data         data
+                    :entities-fn  ->underscore})
+          data)))
+    (catch SQLException e
+      (print-sql-exception-chain e)
+      (fail ::update-or-insert!))))
+``` 
+
+The macro takes two parameters - binding with connection and map of optional transaction options (`:read-only?` and `:isolation`), and function to be run
+in the context of transaction.
+
 ## License
 
 Copyright © 2016 [Vincit Oy](https://www.vincit.fi/en/)
