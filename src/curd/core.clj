@@ -2,6 +2,7 @@
   (:use [curd.utils])
   (:require [clojure.java.jdbc :as j]
             [clojure.spec :as s]
+            [clojure.spec.test :as stest]
             [curd.spec.core :as spec])
   (:import (java.sql SQLException)))
 
@@ -39,7 +40,7 @@
              :vector vector?
              :seq seq?))
 
-(s/instrument #'insert!)
+(stest/instrument `insert!)
 
 (defn do-query
   "Wrapper for java.jdbc's query function.
@@ -56,7 +57,7 @@
              :map map?
              :seq seq?))
 
-(s/instrument #'do-query)
+(stest/instrument `do-query)
 
 (defn execute!
   "Wrapper for java.jdbc's execute! function.
@@ -67,7 +68,7 @@
 (s/fdef execute!
   :args (s/? ::spec/execute!-args))
 
-(s/instrument #'execute!)
+(stest/instrument `execute!)
 
 (defn delete!
   "Wrapper for java.jdbc's delete! function.
@@ -79,7 +80,7 @@
 (s/fdef delete!
   :args (s/? ::spec/delete!-args))
 
-(s/instrument #'delete!)
+(stest/instrument `delete!)
 
 (defn find-one-by-id
   "Wrapper for java.jdbc's get-by-id function.
@@ -94,7 +95,7 @@
   :args (s/? ::spec/find-one-by-id-args)
   :ret (s/? map?))
 
-(s/instrument #'find-one-by-id)
+(stest/instrument `find-one-by-id)
 
 (defmacro in-transaction
   "Wraps java.jdbc's with-db-transcation macro. The first input is binding, providing database connection for the

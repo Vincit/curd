@@ -1,6 +1,7 @@
 (ns curd.utils
   (:require [camel-snake-kebab.core :as csk]
-            [clojure.spec :as s]))
+            [clojure.spec :as s]
+            [clojure.spec.test :as stest]))
 
 (defn ->kebab-case
   "Transforms keywords of map to kebab-case"
@@ -18,7 +19,7 @@
   :args (s/cat :keyword keyword?)
   :ret (s/cat :keyword keyword?))
 
-(s/instrument #'->namespaced-keyword)
+(stest/instrument `->namespaced-keyword)
 
 (defn fail
   "Throws generic exception."
@@ -28,4 +29,4 @@
 (s/fdef fail
   :args (s/cat :keyword keyword?))
 
-(s/instrument #'fail)
+(stest/instrument `fail)
