@@ -113,7 +113,6 @@
 (s/def ::key-value ::string-or-number)
 (s/def ::key-name keyword?)
 
-
 ;; -------------- PUBLIC SPECS -----------------
 
 (s/def ::insert!-args

@@ -90,8 +90,17 @@
                       (curd/do!))]
       (is (seq? result))
       (is (= (count result) 2))
-      (is (= ["janispetka" "petkajanis"] (reduce #(conj %1 (:username %2)) [] result)))))
-  )
+      (is (= ["janispetka" "petkajanis"] (reduce #(conj %1 (:username %2)) [] result))))))
+
+(deftest create!-with-transaction
+  (testing "saving multiple rows, second row has invalid data, transaction should be aborted and rows should be saved"
+    (is (thrown? Exception (->> [user-data (assoc user-data-2 :invalid-field 2)]
+                                (curd/prepare-create-map db :users)
+                                (curd/do!))))
+    (is (= (->> ["SELECT * from users"]
+                (curd/prepare-query-map db ::curd/find-all)
+                (curd/do!)
+                (count)) 0))))
 
 (deftest find-one
   (testing "Invalid db-spec, should throw validation exception"
@@ -270,3 +279,21 @@
     (is (empty? (->> ["SELECT * from users"]
                      (curd/prepare-query-map db-with-spec ::curd/find-all)
                      (curd/do!))))))
+
+(deftest update-or-insert!
+  (testing "Should create new row"
+    (let [result (curd/do! {:method ::curd/update-or-insert!
+                            :table :users
+                            :db db
+                            :query ["SELECT * from users WHERE username = ?" "janispetka"]
+                            :data user-data})]
+      (is (= result (assoc user-data :user-id 1)))))
+
+  (testing "Already exists, should update"
+    (let [updated-user-data (merge user-data {:user-id 1 :last-name "Petkovic"})
+          result (curd/do! {:method ::curd/update-or-insert!
+                            :table :users
+                            :db db
+                            :query ["SELECT * from users WHERE username = ?" "janispetka"]
+                            :data updated-user-data})]
+      (is (= result updated-user-data)))))

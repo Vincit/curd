@@ -12,6 +12,10 @@
 
 ;; ================ DB functions =======================
 
+(defn get-conn [conn-or-spec]
+  "Returns either value of :spec key, or original conenction object if it has no :spec key."
+  (or (:spec conn-or-spec) conn-or-spec))
+
 (defn insert!
   "Wrapper for java.jdbc's insert! function.
   Input conn can be either db's spec or transaction.
@@ -22,13 +26,12 @@
   Supports creation of multiple rows, if supplied data is vector."
   [{:keys [conn-or-spec table data entities-fn]
     :or {entities-fn identity}}]
-  (let [conn (:spec conn-or-spec)]
-    (if (map? data)
-      (->> (j/insert! (or conn conn-or-spec) table data {:entities entities-fn})
-           first
-           ->kebab-case)
-      (->> (j/insert-multi! (or conn conn-or-spec) table data {:entities entities-fn})
-           (map #(->kebab-case %))))))
+  (if (map? data)
+    (->> (j/insert! (get-conn conn-or-spec) table data {:entities entities-fn})
+         first
+         ->kebab-case)
+    (->> (j/insert-multi! (get-conn conn-or-spec) table data {:entities entities-fn})
+         (map #(->kebab-case %)))))
 
 (s/fdef insert!
   :args (s/? ::spec/insert!-args)
@@ -43,10 +46,9 @@
   Input conn can be either db's spec or transaction.
   Takes optional result-set-fn and row-fn processing functions."
   [{:keys [conn-or-spec query result-set-fn row-fn]}]
-  (let [conn (:spec conn-or-spec)]
-    (j/query (or conn conn-or-spec) query {:identifiers   ->dash
-                                           :result-set-fn (or result-set-fn doall)
-                                           :row-fn        (or row-fn identity)})))
+  (j/query (get-conn conn-or-spec) query {:identifiers   ->dash
+                                          :result-set-fn (or result-set-fn doall)
+                                          :row-fn        (or row-fn identity)}))
 
 (s/fdef do-query
   :args (s/? ::spec/do-query-args)
@@ -60,8 +62,7 @@
   "Wrapper for java.jdbc's execute! function.
   Input conn can be either db's spec or transaction"
   [{:keys [conn-or-spec query]}]
-  (let [conn (:spec conn-or-spec)]
-    (j/execute! (or conn conn-or-spec) query)))
+  (j/execute! (get-conn conn-or-spec) query))
 
 (s/fdef execute!
   :args (s/? ::spec/execute!-args))
@@ -73,8 +74,7 @@
   Inputs are db's spec or transaction, table and sql query
   with parameters."
   [{:keys [conn-or-spec table query]}]
-  (let [conn (:spec conn-or-spec)]
-    (j/delete! (or conn conn-or-spec) table query)))
+  (j/delete! (get-conn conn-or-spec) table query))
 
 (s/fdef delete!
   :args (s/? ::spec/delete!-args))
@@ -86,10 +86,9 @@
   Inputs are conn, required table and private key value,
   as well as optional private key name (default is :id) and data set processing functions."
   [{:keys [conn-or-spec table key-value key-name result-set-fn entities-fn identifiers-fn]}]
-  (let [conn (:spec conn-or-spec)]
-    (j/get-by-id (or conn conn-or-spec) table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
-                                                                           :entities      (or entities-fn identity)
-                                                                           :identifiers   (or identifiers-fn identity)})))
+  (j/get-by-id (get-conn conn-or-spec) table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
+                                                                          :entities      (or entities-fn identity)
+                                                                          :identifiers   (or identifiers-fn identity)}))
 
 (s/fdef find-one-by-id
   :args (s/? ::spec/find-one-by-id-args)
@@ -98,8 +97,16 @@
 (s/instrument #'find-one-by-id)
 
 (defmacro in-transaction
-  [binding & body]
-  `(j/with-db-transaction ~binding ~@body))
+  "Wraps java.jdbc's with-db-transcation macro. The first input is binding, providing database connection for the
+  transaction and the name to which that is bound for evaluation of the body. The binding may also specify
+  the isolation level for the transaction, via the :isolation option and/or set the transaction to
+  readonly via the :read-only? option.
+
+  (in-transaction [conn db {:read-only? true}]
+    (....body....))"
+  [[conn db & params] & body]
+  (let [binding ['conn '(get-conn db) (first params)]]
+    `(j/with-db-transaction ~binding ~@body)))
 
 (defn print-sql-exception-chain [e]
   (j/print-sql-exception-chain e))
@@ -131,10 +138,11 @@
   "Inserts single row to database and returns created row."
   [{:keys [db table data]}]
   (try
-    (insert! {:conn-or-spec db
-              :table        table
-              :data         data
-              :entities-fn  ->underscore})
+    (in-transaction [conn db]
+      (insert! {:conn-or-spec conn
+                :table        table
+                :data         data
+                :entities-fn  ->underscore}))
     (catch SQLException e
       (print-sql-exception-chain e)
       (fail ::create!))))
@@ -184,8 +192,9 @@
   Returns a sequence of the number of rows updated."
   [{:keys [db query]}]
   (try
-    (execute! {:conn-or-spec  db
-               :query         query})
+    (in-transaction [conn db]
+      (execute! {:conn-or-spec  conn
+                 :query         query}))
     (catch SQLException e
       (print-sql-exception-chain e)
       (fail ::update!))))
@@ -205,11 +214,12 @@
   "Updates row if it exists or creates new."
   [{:keys [db table data query]}]
   (try
-    (in-transaction [t-con db]
-      (let [result (execute! {:conn-or-spec   t-con
-                              :query          query})]
-        (if (zero? (first result))
-          (insert! {:conn-or-spec t-con
+    (in-transaction [conn db {:read-only? false}]
+      (let [result  (do-query {:conn-or-spec   conn
+                               :query          query
+                               :result-set-fn  first})]
+        (if-not result
+          (insert! {:conn-or-spec conn
                     :table        table
                     :data         data
                     :entities-fn  ->underscore})
@@ -241,12 +251,3 @@
    :db      db
    :table   table
    :query   sql})
-
-(defn prepare-create-or-update-map
-  "Prepares a map for create or update crud method"
-  [db method table data sql]
-  {:method  method
-   :table   table
-   :db      db
-   :query   sql
-   :data    data})
