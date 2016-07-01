@@ -105,7 +105,6 @@ Same code for Create operation can look like this:
 All helper methods are: 
 - `prepare-create-map`
 - `prepare-query-map`
-- `prepare-create-or-update-map`
 - `prepare-delete-map`
 
 It is your choice whether you want to use helpers or plain data!
