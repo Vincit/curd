@@ -1,6 +1,11 @@
 (ns curd.utils-test
-  (:require [clojure.test   :refer :all]
-            [curd.utils     :refer :all]))
+  (:require [clojure.test :refer :all]
+            [curd.utils :refer :all]
+            [clojure.spec.test :as stest]))
+
+;; ENABLE INSTRUMENTATION
+(stest/instrument `->namespaced-keyword)
+(stest/instrument `fail)
 
 (deftest test->kebab-case
   (testing "Should convert map keys from snake_case to kebab-case"

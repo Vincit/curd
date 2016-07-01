@@ -2,7 +2,8 @@
   (:require [clojure.test :refer :all]
             [curd.core :as curd]
             [ragtime.jdbc :as ragtime]
-            [ragtime.repl :as repl]))
+            [ragtime.repl :as repl]
+            [clojure.spec.test :as stest]))
 
 (def db "jdbc:postgresql://localhost/curd_test?user=curd_test&password=curd_test")
 
@@ -40,6 +41,13 @@
                   :first-name "Petka"
                   :last-name  "Janis"
                   :country    "Finland"})
+
+;; ENABLE INSTRUMENTATION
+(stest/instrument `curd/insert!)
+(stest/instrument `curd/do-query)
+(stest/instrument `curd/execute!)
+(stest/instrument `curd/delete!)
+(stest/instrument `curd/find-one-by-id)
 
 (deftest create!
   (testing "Invalid db-spec, should throw validation exception"
