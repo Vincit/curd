@@ -43,11 +43,21 @@
                   :country    "Finland"})
 
 ;; ENABLE INSTRUMENTATION
+(stest/instrument `curd/get-conn)
 (stest/instrument `curd/insert!)
 (stest/instrument `curd/do-query)
 (stest/instrument `curd/execute!)
 (stest/instrument `curd/delete!)
 (stest/instrument `curd/find-one-by-id)
+
+(deftest get-conn
+  (testing "Invalid input, should throw validation exception"
+    (is (thrown? Exception (curd/get-conn :invalid))))
+
+  (testing "Valid should return connection"
+    (is (= db (curd/get-conn db-with-spec)))
+    (is (= db (curd/get-conn db)))
+    (is (= db-driver-manager (curd/get-conn db-driver-manager)))))
 
 (deftest create!
   (testing "Invalid db-spec, should throw validation exception"

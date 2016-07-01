@@ -16,6 +16,10 @@
   "Returns either value of :spec key, or original conenction object if it has no :spec key."
   (or (:spec conn-or-spec) conn-or-spec))
 
+(s/fdef get-conn
+  :args (s/cat :conn-or-spec ::spec/conn-or-spec)
+  :ret (s/cat :conn ::spec/conn))
+
 (defn insert!
   "Wrapper for java.jdbc's insert! function.
   Input conn can be either db's spec or transaction.
