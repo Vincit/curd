@@ -5,7 +5,7 @@
 A Clojure wrapper around [java.jdbc](https://github.com/clojure/java.jdbc) making CRUD operations hassle-free and as simple as Clojure's data structures are.
 Curd is heavily customizable and library agnostic.
 Usually we use the same set of CRUD methods all over again and again. Life would so much easier, if we could have a single 
-interface to perform all our queries, inserts and so on. That's exactly what Curd offers.
+interface to perform all our queries, inserts and so on, by simply passing data! After all, Clojure is all about data. That's exactly what Curd offers.
 
 ## Latest Version
 
@@ -18,6 +18,7 @@ interface to perform all our queries, inserts and so on. That's exactly what Cur
 Curd doesn't know anything about underlying database. It doesn't care about the way you generate queries either. All it needs
 is database's spec, sql with parameters (just as like java.jdbc) and occasionally database's table name.
 For example. you can generate queries with [HoneySql](https://github.com/jkk/honeysql). 
+Crud operations in curd are declarative, clean and easy to comprehend. 
 
 Notice, that you can supply as `db` input parameter either connection, or map with `:spec` key, containing connection.
 
@@ -43,7 +44,7 @@ Supplied data to `create!` method can be map or vector of maps.
 (ns example
   (:require [curd.core :as c]))
 
-(defn update-user [db sql-query]
+(defn find-users [db sql-query]
     (c/do! {:method   ::c/find-all
             :db       db
             :query    sql-query}))
@@ -69,7 +70,7 @@ Supplied data to `create!` method can be map or vector of maps.
 (ns example
   (:require [curd.core :as c]))
 
-(defn update-user [db table sql-query]
+(defn delete-user [db table sql-query]
     (c/do! {:method   ::c/delete!
             :db       db
             :table    table
