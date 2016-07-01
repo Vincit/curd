@@ -128,11 +128,10 @@
   "Inserts single row to database and returns created row."
   [{:keys [db table data]}]
   (try
-    (in-transaction [conn db]
-      (insert! {:conn-or-spec conn
-                :table        table
-                :data         data
-                :entities-fn  ->underscore}))
+    (insert! {:conn-or-spec db
+              :table        table
+              :data         data
+              :entities-fn  ->underscore})
     (catch SQLException e
       (print-sql-exception-chain e)
       (fail ::create!))))
