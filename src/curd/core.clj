@@ -123,7 +123,7 @@
     `(defmethod do! ~kw ~(vec arglist) ~@doc ~@more)))
 ;
 (s/fdef defcrudmethod
-  :args (s/cat :method-name keyword? :doc string? :arguments vector? :body ::s/any)
+  :args (s/cat :method-name keyword? :doc string? :arguments vector? :body any?)
   :ret ::spec/multi-fn)
 
 ;; ================ Basic CRUD API ==================
