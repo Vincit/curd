@@ -1,4 +1,4 @@
-(defproject vincit/curd "0.1.3-SNAPSHOT"
+(defproject vincit/curd "0.1.3-alpha1"
   :description "Easy and sweet crud without hassle"
   :url "https://github.com/vincit/curd"
   :license {:name "Eclipse Public License"
