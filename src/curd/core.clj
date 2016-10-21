@@ -220,27 +220,3 @@
     (catch SQLException e
       (print-sql-exception-chain e)
       (fail ::update-or-insert!))))
-
-
-;; ================ Simple public helpers  ==================
-
-(defn prepare-create-map
-  "Prepares a map for ::create! crud method"
-  [db table data]
-  {:method ::create!
-   :db     db
-   :table  table
-   :data   data})
-
-(defn prepare-query-map
-  "Prepares a map for any query crud method"
-  [db method sql]
-  {:method  method
-   :db      db
-   :query   sql})
-
-(defn prepare-delete-map [db method table sql]
-  {:method  method
-   :db      db
-   :table   table
-   :query   sql})

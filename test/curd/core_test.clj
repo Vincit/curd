@@ -1,6 +1,6 @@
 (ns curd.core-test
   (:require [clojure.test :refer :all]
-            [curd.core :as curd]
+            [curd.core :as c]
             [ragtime.jdbc :as ragtime]
             [ragtime.repl :as repl]
             [clojure.spec.test :as stest]))
@@ -43,275 +43,294 @@
                   :country    "Finland"})
 
 ;; ENABLE INSTRUMENTATION
-(stest/instrument `curd/get-conn)
-(stest/instrument `curd/insert!)
-(stest/instrument `curd/do-query)
-(stest/instrument `curd/execute!)
-(stest/instrument `curd/delete!)
-(stest/instrument `curd/find-one-by-id)
+(stest/instrument `c/get-conn)
+(stest/instrument `c/insert!)
+(stest/instrument `c/do-query)
+(stest/instrument `c/execute!)
+(stest/instrument `c/delete!)
+(stest/instrument `c/find-one-by-id)
 
 (deftest get-conn
   (testing "Invalid input, should throw validation exception"
-    (is (thrown? Exception (curd/get-conn :invalid))))
+    (is (thrown? Exception (c/get-conn :invalid))))
 
   (testing "Valid should return connection"
-    (is (= db (curd/get-conn db-with-spec)))
-    (is (= db (curd/get-conn db)))
-    (is (= db-driver-manager (curd/get-conn db-driver-manager)))))
+    (is (= db (c/get-conn db-with-spec)))
+    (is (= db (c/get-conn db)))
+    (is (= db-driver-manager (c/get-conn db-driver-manager)))))
 
 (deftest create!
   (testing "Invalid db-spec, should throw validation exception"
-    (is (thrown? Exception (->> user-data
-                                (curd/prepare-create-map {:invalid "map"} :users)
-                                (curd/do!)))))
+    (is (thrown? Exception (c/do! {:db        {:invalid "map"}
+                                   :method    ::c/create!
+                                   :table     :users
+                                   :data      user-data}))))
 
   (testing "Supplied table name is string, should throw validation exception"
-    (is (thrown? Exception (->> user-data
-                                (curd/prepare-create-map db "users")
-                                (curd/do!)))))
+    (is (thrown? Exception (c/do! {:db      db
+                                   :method  ::c/create!
+                                   :table   "users"
+                                   :data    user-data}))))
 
   (testing "create! method returns created row"
-    (let [result (->> user-data
-                      (curd/prepare-create-map db :users)
-                      (curd/do!))]
+    (let [result (c/do! {:db      db
+                         :method  ::c/create!
+                         :table   :users
+                         :data    user-data})]
       (is (= result (assoc user-data :user-id 1)))))
 
   (testing "create! method returns created row. Using driver manager db config"
-    (let [result (->> user-data
-                      (curd/prepare-create-map db-driver-manager :users)
-                      (curd/do!))]
+    (let [result (c/do! {:db      db-driver-manager
+                         :method  ::c/create!
+                         :table   :users
+                         :data    user-data})]
       (is (= result (assoc user-data :user-id 2)))))
 
   (testing "create! method returns created row. Using object with spec"
-    (let [result (->> user-data
-                      (curd/prepare-create-map db-with-spec :users)
-                      (curd/do!))]
+    (let [result (c/do! {:db      db-with-spec
+                         :method  ::c/create!
+                         :table   :users
+                         :data    user-data})]
       (is (= result (assoc user-data :user-id 3)))))
 
   (testing "data has not existing column, should throw exception"
     (is (thrown-with-msg? Exception #":curd.core/create! crud method failed. Check the SQL Exception description above"
-                          (->> (assoc user-data :not-existing "123")
-                               (curd/prepare-create-map db :users)
-                               (curd/do!)))))
+                          (c/do! {:db      db
+                                  :method  ::c/create!
+                                  :table   :users
+                                  :data    (assoc user-data :not-existing "123")}))))
 
   (testing "saving multiple rows, should return rows"
-    (let [result (->> [user-data user-data-2]
-                      (curd/prepare-create-map db :users)
-                      (curd/do!))]
+    (let [result (c/do! {:db      db
+                         :method  ::c/create!
+                         :table   :users
+                         :data    [user-data user-data-2]})]
       (is (seq? result))
       (is (= (count result) 2))
       (is (= ["janispetka" "petkajanis"] (reduce #(conj %1 (:username %2)) [] result)))))
 
   (testing "saving multiple rows, should return rows. Using object with spec"
-    (let [result (->> [user-data user-data-2]
-                      (curd/prepare-create-map db-with-spec :users)
-                      (curd/do!))]
+    (let [result (c/do! {:db      db-with-spec
+                         :method  ::c/create!
+                         :table   :users
+                         :data    [user-data user-data-2]})]
       (is (seq? result))
       (is (= (count result) 2))
       (is (= ["janispetka" "petkajanis"] (reduce #(conj %1 (:username %2)) [] result))))))
 
 (deftest create!-with-transaction
   (testing "saving multiple rows, second row has invalid data, transaction should be aborted and rows should be saved"
-    (is (thrown? Exception (->> [user-data (assoc user-data-2 :invalid-field 2)]
-                                (curd/prepare-create-map db :users)
-                                (curd/do!))))
-    (is (= (->> ["SELECT * from users"]
-                (curd/prepare-query-map db ::curd/find-all)
-                (curd/do!)
-                (count)) 0))))
+    (is (thrown? Exception (c/do! {:db      db
+                                   :method  ::c/create!
+                                   :table   :users
+                                   :data    [user-data (assoc user-data-2 :invalid-field 2)]})))
+    (is (= (-> (c/do! {:db      db
+                       :method  ::c/find-all
+                       :query   ["SELECT * from users"]})
+               (count)) 0))))
 
 (deftest find-one
   (testing "Invalid db-spec, should throw validation exception"
-    (is (thrown? Exception (->> ["SELECT * from users WHERE username = ?" "janispetka"]
-                                (curd/prepare-query-map {:invalid "map"} ::curd/find-one)
-                                (curd/do!)))))
+    (is (thrown? Exception (c/do! {:db      {:invalid "map"}
+                                   :method  ::c/find-one
+                                   :query   ["SELECT * from users WHERE username = ?" "janispetka"]}))))
   (testing "Should return found row. Using all kinds of db objects."
     (do
-      (->> user-data
-           (curd/prepare-create-map db :users)
-           (curd/do!))
-      (is (= (->> ["SELECT * from users WHERE username = ?" "janispetka"]
-                  (curd/prepare-query-map db ::curd/find-one)
-                  (curd/do!)) (assoc user-data :user-id 1)))
-      (is (= (->> ["SELECT * from users WHERE username = ?" "janispetka"]
-                  (curd/prepare-query-map db-driver-manager ::curd/find-one)
-                  (curd/do!)) (assoc user-data :user-id 1)))
-      (is (= (->> ["SELECT * from users WHERE username = ?" "janispetka"]
-                  (curd/prepare-query-map db-with-spec ::curd/find-one)
-                  (curd/do!)) (assoc user-data :user-id 1)))
+      (c/do! {:db      db
+              :method  ::c/create!
+              :table   :users
+              :data    user-data})
+      (is (=  (c/do! {:db      db
+                      :method  ::c/find-one
+                      :query   ["SELECT * from users WHERE username = ?" "janispetka"]})
+              (assoc user-data :user-id 1)))
+      (is (= (c/do! {:db      db-driver-manager
+                     :method  ::c/find-one
+                     :query   ["SELECT * from users WHERE username = ?" "janispetka"]})
+             (assoc user-data :user-id 1)))
+      (is (= (c/do! {:db      db-with-spec
+                     :method  ::c/find-one
+                     :query   ["SELECT * from users WHERE username = ?" "janispetka"]})
+             (assoc user-data :user-id 1)))
       ))
 
   (testing "Query by username and id, should return found row. Using all kinds of db objects"
     (do
-      (->> user-data
-           (curd/prepare-create-map db :users)
-           (curd/do!))
-      (is (= (->> ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]
-                  (curd/prepare-query-map db ::curd/find-one)
-                  (curd/do!)) (assoc user-data :user-id 1)))
-      (is (= (->> ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]
-                  (curd/prepare-query-map db-driver-manager ::curd/find-one)
-                  (curd/do!)) (assoc user-data :user-id 1)))
-      (is (= (->> ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]
-                  (curd/prepare-query-map db-with-spec ::curd/find-one)
-                  (curd/do!)) (assoc user-data :user-id 1)))
+      (c/do! {:db      db
+              :method  ::c/create!
+              :table   :users
+              :data    user-data})
+      (is (= (c/do! {:db      db
+                     :method  ::c/find-one
+                     :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]})
+             (assoc user-data :user-id 1)))
+      (is (= (c/do! {:db      db-driver-manager
+                     :method  ::c/find-one
+                     :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]}) (assoc user-data :user-id 1)))
+      (is (= (c/do! {:db      db-with-spec
+                     :method  ::c/find-one
+                     :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]}) (assoc user-data :user-id 1)))
       )))
 
 (deftest find-one-by-id
   (testing "Should find row and return it"
     (let [user-data-with-id (assoc user-data :user-id 20)]
-      (do (->> user-data-with-id
-               (curd/prepare-create-map db :users)
-               (curd/do!))
-          (is (= (-> {:method     ::curd/find-one-by-id
-                      :db         db
-                      :table      :users
-                      :key-value  20
-                      :key-name   :user-id}
-                     (curd/do!)) user-data-with-id))
-          (is (= (-> {:method     ::curd/find-one-by-id
-                      :db         db-driver-manager
-                      :table      :users
-                      :key-value  20
-                      :key-name   :user-id}
-                     (curd/do!)) user-data-with-id))
-          (is (= (-> {:method     ::curd/find-one-by-id
-                      :db         db-with-spec
-                      :table      :users
-                      :key-value  20
-                      :key-name   :user-id}
-                     (curd/do!)) user-data-with-id))
+      (do (c/do! {:db      db
+                  :method  ::c/create!
+                  :table   :users
+                  :data    user-data-with-id})
+          (is (= (c/do! {:method     ::curd/find-one-by-id
+                         :db         db
+                         :table      :users
+                         :key-value  20
+                         :key-name   :user-id}) user-data-with-id))
+          (is (= (c/do! {:method     ::curd/find-one-by-id
+                         :db         db-driver-manager
+                         :table      :users
+                         :key-value  20
+                         :key-name   :user-id}) user-data-with-id))
+          (is (= (c/do! {:method     ::curd/find-one-by-id
+                         :db         db-with-spec
+                         :table      :users
+                         :key-value  20
+                         :key-name   :user-id}) user-data-with-id))
           ))))
 
 (deftest find-all
   (testing "Should return two rows"
     (do
-      (doall (map #(->> %1
-                        (curd/prepare-create-map db :users)
-                        (curd/do!)) (vector user-data user-data-2)))
-      (is (= (->> ["SELECT * from users"]
-                  (curd/prepare-query-map db ::curd/find-all)
-                  (curd/do!)) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
-      (is (= (->> ["SELECT * from users"]
-                  (curd/prepare-query-map db-driver-manager ::curd/find-all)
-                  (curd/do!)) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
-      (is (= (->> ["SELECT * from users"]
-                  (curd/prepare-query-map db-with-spec ::curd/find-all)
-                  (curd/do!)) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
+      (c/do! {:db      db
+              :method  ::c/create!
+              :table   :users
+              :data    [user-data user-data-2]})
+      (is (= (c/do! {:db      db
+                     :method  ::c/find-all
+                     :query   ["SELECT * from users"]})
+             (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
+      (is (= (c/do! {:db      db-driver-manager
+                     :method  ::c/find-all
+                     :query   ["SELECT * from users"]}) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
+      (is (= (c/do! {:db      db-with-spec
+                     :method  ::c/find-all
+                     :query   ["SELECT * from users"]})
+             (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
       )))
 
 (deftest find-all-with-result-set-fn
   (testing "Should return only first row according to result-set-fn"
     (do
-      (doall (map #(->> %1
-                        (curd/prepare-create-map db :users)
-                        (curd/do!)) (vector user-data user-data-2)))
-      (is (= (->> {:method        ::curd/find-all
-                   :db            db
-                   :query         ["SELECT * from users"]
-                   :result-set-fn first}
-                  (curd/do!)) (assoc user-data :user-id 1)))
-      (is (= (->> {:method        ::curd/find-all
-                   :db            db-driver-manager
-                   :query         ["SELECT * from users"]
-                   :result-set-fn first}
-                  (curd/do!)) (assoc user-data :user-id 1)))
-      (is (= (->> {:method        ::curd/find-all
-                   :db            db-with-spec
-                   :query         ["SELECT * from users"]
-                   :result-set-fn first}
-                  (curd/do!)) (assoc user-data :user-id 1)))
+      (c/do! {:db      db
+              :method  ::c/create!
+              :table   :users
+              :data    [user-data user-data-2]})
+      (is (= (c/do! {:method        ::curd/find-all
+                     :db            db
+                     :query         ["SELECT * from users"]
+                     :result-set-fn first}) (assoc user-data :user-id 1)))
+      (is (= (c/do! {:method        ::curd/find-all
+                     :db            db-driver-manager
+                     :query         ["SELECT * from users"]
+                     :result-set-fn first}) (assoc user-data :user-id 1)))
+      (is (= (c/do! {:method        ::curd/find-all
+                     :db            db-with-spec
+                     :query         ["SELECT * from users"]
+                     :result-set-fn first}) (assoc user-data :user-id 1)))
       )))
 
 (deftest find-all-with-row-fn
   (testing "Should return all rows without :user-id according to row-fn"
     (do
-      (doall (map #(->> %1
-                        (curd/prepare-create-map db :users)
-                        (curd/do!)) (vector user-data user-data-2)))
-      (is (= (->> {:method  ::curd/find-all
-                   :db      db
-                   :query   ["SELECT * from users"]
-                   :row-fn  #(dissoc %1 :user-id)}
-                  (curd/do!)) (vector user-data user-data-2)))
-      (is (= (->> {:method  ::curd/find-all
-                   :db      db-driver-manager
-                   :query   ["SELECT * from users"]
-                   :row-fn  #(dissoc %1 :user-id)}
-                  (curd/do!)) (vector user-data user-data-2)))
-      (is (= (->> {:method  ::curd/find-all
-                   :db      db-with-spec
-                   :query   ["SELECT * from users"]
-                   :row-fn  #(dissoc %1 :user-id)}
-                  (curd/do!)) (vector user-data user-data-2)))
+      (c/do! {:db      db
+              :method  ::c/create!
+              :table   :users
+              :data    [user-data user-data-2]})
+      (is (= (c/do! {:method  ::curd/find-all
+                     :db      db
+                     :query   ["SELECT * from users"]
+                     :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
+      (is (= (c/do! {:method  ::curd/find-all
+                     :db      db-driver-manager
+                     :query   ["SELECT * from users"]
+                     :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
+      (is (= (c/do! {:method  ::curd/find-all
+                     :db      db-with-spec
+                     :query   ["SELECT * from users"]
+                     :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
       )))
 
 (deftest update!
   (testing "Should update row"
     (do
-      (->> user-data
-           (curd/prepare-create-map db :users)
-           (curd/do!))
-      (is (= (->> ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]
-                  (curd/prepare-query-map db ::curd/update!)
-                  (curd/do!)) [1]))
-      (is (= (->> ["UPDATE users SET country = ? where user_id = ?" "Finland" 1]
-                  (curd/prepare-query-map db-driver-manager ::curd/update!)
-                  (curd/do!)) [1]))
-      (is (= (->> ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]
-                  (curd/prepare-query-map db-with-spec ::curd/update!)
-                  (curd/do!)) [1]))
+      (c/do! {:db      db
+              :method  ::c/create!
+              :table   :users
+              :data    user-data})
+      (is (=  (c/do! {:db      db
+                      :method  ::c/update!
+                      :query   ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]})
+              [1]))
+      (is (= (c/do! {:db      db-driver-manager
+                     :method  ::c/update!
+                     :query   ["UPDATE users SET country = ? where user_id = ?" "Finland" 1]}) [1]))
+      (is (= (c/do! {:db      db-with-spec
+                     :method  ::c/update!
+                     :query   ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]}) [1]))
       )))
 
 (deftest delete!
   (testing "Should delete row"
-    (do
-      (->> user-data
-           (curd/prepare-create-map db :users)
-           (curd/do!)))
-    (is (= (->> ["user_id = ?" 1]
-                (curd/prepare-delete-map db ::curd/delete! :users)
-                (curd/do!)) [1]))
-    (is (empty? (->> ["SELECT * from users"]
-                     (curd/prepare-query-map db ::curd/find-all)
-                     (curd/do!)))))
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    user-data})
+    (is (= (c/do! {:db      db
+                   :method  ::c/delete!
+                   :table   :users
+                   :query   ["user_id = ?" 1]})
+           [1]))
+    (is (empty? (c/do! {:db      db
+                        :method  ::c/find-all
+                        :query   ["SELECT * from users"]}))))
   (testing "Should delete row, using db driver manager"
-    (do
-      (->> user-data
-           (curd/prepare-create-map db-driver-manager :users)
-           (curd/do!)))
-    (is (= (->> ["user_id = ?" 2]
-                (curd/prepare-delete-map db-driver-manager ::curd/delete! :users)
-                (curd/do!)) [1]))
-    (is (empty? (->> ["SELECT * from users"]
-                     (curd/prepare-query-map db-driver-manager ::curd/find-all)
-                     (curd/do!)))))
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    user-data})
+    (is (= (c/do! {:db      db-driver-manager
+                   :method  ::c/delete!
+                   :table   :users
+                   :query   ["user_id = ?" 2]})
+           [1]))
+    (is (empty? (c/do! {:db      db
+                        :method  ::c/find-all
+                        :query   ["SELECT * from users"]}))))
   (testing "Should delete row, using object with db spec"
-    (do
-      (->> user-data
-           (curd/prepare-create-map db-with-spec :users)
-           (curd/do!)))
-    (is (= (->> ["user_id = ?" 3]
-                (curd/prepare-delete-map db-with-spec ::curd/delete! :users)
-                (curd/do!)) [1]))
-    (is (empty? (->> ["SELECT * from users"]
-                     (curd/prepare-query-map db-with-spec ::curd/find-all)
-                     (curd/do!))))))
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    user-data})
+    (is (= (c/do! {:db      db-with-spec
+                   :method  ::c/delete!
+                   :table   :users
+                   :query   ["user_id = ?" 3]}) [1]))
+    (is (empty? (c/do! {:db      db
+                        :method  ::c/find-all
+                        :query   ["SELECT * from users"]})))))
 
 (deftest update-or-insert!
   (testing "Should create new row"
-    (let [result (curd/do! {:method ::curd/update-or-insert!
-                            :table :users
-                            :db db
-                            :query ["SELECT * from users WHERE username = ?" "janispetka"]
-                            :data user-data})]
+    (let [result (c/do! {:method   ::curd/update-or-insert!
+                         :table :users
+                         :db    db
+                         :query ["SELECT * from users WHERE username = ?" "janispetka"]
+                         :data  user-data})]
       (is (= result (assoc user-data :user-id 1)))))
 
   (testing "Already exists, should update"
     (let [updated-user-data (merge user-data {:user-id 1 :last-name "Petkovic"})
-          result (curd/do! {:method ::curd/update-or-insert!
-                            :table :users
-                            :db db
-                            :query ["SELECT * from users WHERE username = ?" "janispetka"]
-                            :data updated-user-data})]
+          result (c/do! {:method   ::curd/update-or-insert!
+                         :table :users
+                         :db    db
+                         :query ["SELECT * from users WHERE username = ?" "janispetka"]
+                         :data  updated-user-data})]
       (is (= result updated-user-data)))))

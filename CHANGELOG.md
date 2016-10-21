@@ -1,5 +1,10 @@
 # CURD Changelog
 
+# 0.1.3-alpha2
+
+### Breaking changes
+Helper methods are removed.
+
 # 0.1.3-SNAPSHOT
 
 ### Bug fixes

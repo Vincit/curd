@@ -88,28 +88,6 @@ Curd has following methods supported out of the box:
 - `::update!`
 - `::update-or-insert!`
 
-Curd's api also has helper methods, which make your crud calls even cleaner than in examples above.
-
-Same code for Create operation can look like this:
-
-```clj
-(ns example
-  (:require [curd.core :as c]))
-
-(defn save-user [db data]
-    (->> data
-         (c/prepare-create-map db :users)
-         (c/do!)))
-    
-```
-
-All helper methods are: 
-- `prepare-create-map`
-- `prepare-query-map`
-- `prepare-delete-map`
-
-It is your choice whether you want to use helpers or plain data!
-
 ## Customizing
 
 Not satisfied with existing methods? Just add new method to `do!` multimethod using `defcrudmethod` macro and off you go!
