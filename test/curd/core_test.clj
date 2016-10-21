@@ -172,6 +172,20 @@
                      :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]}) (assoc user-data :user-id 1)))
       )))
 
+(deftest find-one-with-row-fn
+  (testing "Should find row, apply row-fn and return it"
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    user-data})
+    (is (= (c/do! {:db      db
+                   :method  ::c/find-one
+                   :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]
+                   :row-fn  #(assoc % :active true)})
+           (-> user-data
+               (assoc :user-id 1)
+               (assoc :active true))))))
+
 (deftest find-one-by-id
   (testing "Should find row and return it"
     (let [user-data-with-id (assoc user-data :user-id 20)]

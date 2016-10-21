@@ -171,10 +171,11 @@
   "Executes specified query and returns only first row.
   Assumes that query is designed in a way that it returns only one row.
   Should be used for queries by id or some other unique identifier."
-  [{:keys [db query]}]
+  [{:keys [db query row-fn]}]
   (try
     (do-query {:conn-or-spec   db
                :query          query
+               :row-fn         (or row-fn identity)
                :result-set-fn  first})
     (catch SQLException e
       (print-sql-exception-chain e)
