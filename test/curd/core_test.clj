@@ -135,42 +135,40 @@
                                    :method  ::c/find-one
                                    :query   ["SELECT * from users WHERE username = ?" "janispetka"]}))))
   (testing "Should return found row. Using all kinds of db objects."
-    (do
-      (c/do! {:db      db
-              :method  ::c/create!
-              :table   :users
-              :data    user-data})
-      (is (=  (c/do! {:db      db
-                      :method  ::c/find-one
-                      :query   ["SELECT * from users WHERE username = ?" "janispetka"]})
-              (assoc user-data :user-id 1)))
-      (is (= (c/do! {:db      db-driver-manager
-                     :method  ::c/find-one
-                     :query   ["SELECT * from users WHERE username = ?" "janispetka"]})
-             (assoc user-data :user-id 1)))
-      (is (= (c/do! {:db      db-with-spec
-                     :method  ::c/find-one
-                     :query   ["SELECT * from users WHERE username = ?" "janispetka"]})
-             (assoc user-data :user-id 1)))
-      ))
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    user-data})
+    (is (=  (c/do! {:db      db
+                    :method  ::c/find-one
+                    :query   ["SELECT * from users WHERE username = ?" "janispetka"]})
+            (assoc user-data :user-id 1)))
+    (is (= (c/do! {:db      db-driver-manager
+                   :method  ::c/find-one
+                   :query   ["SELECT * from users WHERE username = ?" "janispetka"]})
+           (assoc user-data :user-id 1)))
+    (is (= (c/do! {:db      db-with-spec
+                   :method  ::c/find-one
+                   :query   ["SELECT * from users WHERE username = ?" "janispetka"]})
+           (assoc user-data :user-id 1))))
 
   (testing "Query by username and id, should return found row. Using all kinds of db objects"
-    (do
-      (c/do! {:db      db
-              :method  ::c/create!
-              :table   :users
-              :data    user-data})
-      (is (= (c/do! {:db      db
-                     :method  ::c/find-one
-                     :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]})
-             (assoc user-data :user-id 1)))
-      (is (= (c/do! {:db      db-driver-manager
-                     :method  ::c/find-one
-                     :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]}) (assoc user-data :user-id 1)))
-      (is (= (c/do! {:db      db-with-spec
-                     :method  ::c/find-one
-                     :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]}) (assoc user-data :user-id 1)))
-      )))
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    user-data})
+    (is (= (c/do! {:db      db
+                   :method  ::c/find-one
+                   :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]})
+           (assoc user-data :user-id 1)))
+    (is (= (c/do! {:db      db-driver-manager
+                   :method  ::c/find-one
+                   :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]})
+           (assoc user-data :user-id 1)))
+    (is (= (c/do! {:db      db-with-spec
+                   :method  ::c/find-one
+                   :query   ["SELECT * from users WHERE username = ? and user_id = ?" "janispetka" 1]})
+           (assoc user-data :user-id 1)))))
 
 (deftest find-one-with-row-fn
   (testing "Should find row, apply row-fn and return it"
@@ -189,107 +187,98 @@
 (deftest find-one-by-id
   (testing "Should find row and return it"
     (let [user-data-with-id (assoc user-data :user-id 20)]
-      (do (c/do! {:db      db
-                  :method  ::c/create!
-                  :table   :users
-                  :data    user-data-with-id})
-          (is (= (c/do! {:method     ::curd/find-one-by-id
-                         :db         db
-                         :table      :users
-                         :key-value  20
-                         :key-name   :user-id}) user-data-with-id))
-          (is (= (c/do! {:method     ::curd/find-one-by-id
-                         :db         db-driver-manager
-                         :table      :users
-                         :key-value  20
-                         :key-name   :user-id}) user-data-with-id))
-          (is (= (c/do! {:method     ::curd/find-one-by-id
-                         :db         db-with-spec
-                         :table      :users
-                         :key-value  20
-                         :key-name   :user-id}) user-data-with-id))
-          ))))
+      (c/do! {:db      db
+              :method  ::c/create!
+              :table   :users
+              :data    user-data-with-id})
+      (is (= (c/do! {:method     ::curd/find-one-by-id
+                     :db         db
+                     :table      :users
+                     :key-value  20
+                     :key-name   :user-id}) user-data-with-id))
+      (is (= (c/do! {:method     ::curd/find-one-by-id
+                     :db         db-driver-manager
+                     :table      :users
+                     :key-value  20
+                     :key-name   :user-id}) user-data-with-id))
+      (is (= (c/do! {:method     ::curd/find-one-by-id
+                     :db         db-with-spec
+                     :table      :users
+                     :key-value  20
+                     :key-name   :user-id}) user-data-with-id)))))
 
 (deftest find-all
   (testing "Should return two rows"
-    (do
-      (c/do! {:db      db
-              :method  ::c/create!
-              :table   :users
-              :data    [user-data user-data-2]})
-      (is (= (c/do! {:db      db
-                     :method  ::c/find-all
-                     :query   ["SELECT * from users"]})
-             (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
-      (is (= (c/do! {:db      db-driver-manager
-                     :method  ::c/find-all
-                     :query   ["SELECT * from users"]}) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
-      (is (= (c/do! {:db      db-with-spec
-                     :method  ::c/find-all
-                     :query   ["SELECT * from users"]})
-             (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
-      )))
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    [user-data user-data-2]})
+    (is (= (c/do! {:db      db
+                   :method  ::c/find-all
+                   :query   ["SELECT * from users"]})
+           (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
+    (is (= (c/do! {:db      db-driver-manager
+                   :method  ::c/find-all
+                   :query   ["SELECT * from users"]}) (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))
+    (is (= (c/do! {:db      db-with-spec
+                   :method  ::c/find-all
+                   :query   ["SELECT * from users"]})
+           (vector (assoc user-data :user-id 1) (assoc user-data-2 :user-id 2))))))
 
 (deftest find-all-with-result-set-fn
   (testing "Should return only first row according to result-set-fn"
-    (do
-      (c/do! {:db      db
-              :method  ::c/create!
-              :table   :users
-              :data    [user-data user-data-2]})
-      (is (= (c/do! {:method        ::curd/find-all
-                     :db            db
-                     :query         ["SELECT * from users"]
-                     :result-set-fn first}) (assoc user-data :user-id 1)))
-      (is (= (c/do! {:method        ::curd/find-all
-                     :db            db-driver-manager
-                     :query         ["SELECT * from users"]
-                     :result-set-fn first}) (assoc user-data :user-id 1)))
-      (is (= (c/do! {:method        ::curd/find-all
-                     :db            db-with-spec
-                     :query         ["SELECT * from users"]
-                     :result-set-fn first}) (assoc user-data :user-id 1)))
-      )))
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    [user-data user-data-2]})
+    (is (= (c/do! {:method        ::curd/find-all
+                   :db            db
+                   :query         ["SELECT * from users"]
+                   :result-set-fn first}) (assoc user-data :user-id 1)))
+    (is (= (c/do! {:method        ::curd/find-all
+                   :db            db-driver-manager
+                   :query         ["SELECT * from users"]
+                   :result-set-fn first}) (assoc user-data :user-id 1)))
+    (is (= (c/do! {:method        ::curd/find-all
+                   :db            db-with-spec
+                   :query         ["SELECT * from users"]
+                   :result-set-fn first}) (assoc user-data :user-id 1)))))
 
 (deftest find-all-with-row-fn
   (testing "Should return all rows without :user-id according to row-fn"
-    (do
-      (c/do! {:db      db
-              :method  ::c/create!
-              :table   :users
-              :data    [user-data user-data-2]})
-      (is (= (c/do! {:method  ::curd/find-all
-                     :db      db
-                     :query   ["SELECT * from users"]
-                     :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
-      (is (= (c/do! {:method  ::curd/find-all
-                     :db      db-driver-manager
-                     :query   ["SELECT * from users"]
-                     :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
-      (is (= (c/do! {:method  ::curd/find-all
-                     :db      db-with-spec
-                     :query   ["SELECT * from users"]
-                     :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
-      )))
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    [user-data user-data-2]})
+    (is (= (c/do! {:method  ::curd/find-all
+                   :db      db
+                   :query   ["SELECT * from users"]
+                   :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
+    (is (= (c/do! {:method  ::curd/find-all
+                   :db      db-driver-manager
+                   :query   ["SELECT * from users"]
+                   :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
+    (is (= (c/do! {:method  ::curd/find-all
+                   :db      db-with-spec
+                   :query   ["SELECT * from users"]
+                   :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))))
 
 (deftest update!
   (testing "Should update row"
-    (do
-      (c/do! {:db      db
-              :method  ::c/create!
-              :table   :users
-              :data    user-data})
-      (is (=  (c/do! {:db      db
-                      :method  ::c/update!
-                      :query   ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]})
-              [1]))
-      (is (= (c/do! {:db      db-driver-manager
-                     :method  ::c/update!
-                     :query   ["UPDATE users SET country = ? where user_id = ?" "Finland" 1]}) [1]))
-      (is (= (c/do! {:db      db-with-spec
-                     :method  ::c/update!
-                     :query   ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]}) [1]))
-      )))
+    (c/do! {:db      db
+            :method  ::c/create!
+            :table   :users
+            :data    user-data})
+    (is (=  (c/do! {:db      db
+                    :method  ::c/update!
+                    :query   ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]})
+            [1]))
+    (is (= (c/do! {:db      db-driver-manager
+                   :method  ::c/update!
+                   :query   ["UPDATE users SET country = ? where user_id = ?" "Finland" 1]}) [1]))
+    (is (= (c/do! {:db      db-with-spec
+                   :method  ::c/update!
+                   :query   ["UPDATE users SET country = ? where user_id = ?" "Sweden" 1]}) [1]))))
 
 (deftest delete!
   (testing "Should delete row"
