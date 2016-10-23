@@ -8,6 +8,6 @@
                  [org.clojure/java.jdbc "0.6.2-alpha3"]
                  [camel-snake-kebab "0.4.0"]]
   :profiles {:dev {:dependencies [[ragtime "0.6.3"]
-                                  [org.postgresql/postgresql "9.4.1211"]]
+                                  [org.postgresql/postgresql "9.4.1210.jre7"]]
                    :plugins [[com.jakemccrary/lein-test-refresh "0.16.0"]]}}
   :test-refresh {:changes-only true})
