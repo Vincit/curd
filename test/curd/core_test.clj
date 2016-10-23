@@ -191,17 +191,17 @@
               :method  ::c/create!
               :table   :users
               :data    user-data-with-id})
-      (is (= (c/do! {:method     ::curd/find-one-by-id
+      (is (= (c/do! {:method     ::c/find-one-by-id
                      :db         db
                      :table      :users
                      :key-value  20
                      :key-name   :user-id}) user-data-with-id))
-      (is (= (c/do! {:method     ::curd/find-one-by-id
+      (is (= (c/do! {:method     ::c/find-one-by-id
                      :db         db-driver-manager
                      :table      :users
                      :key-value  20
                      :key-name   :user-id}) user-data-with-id))
-      (is (= (c/do! {:method     ::curd/find-one-by-id
+      (is (= (c/do! {:method     ::c/find-one-by-id
                      :db         db-with-spec
                      :table      :users
                      :key-value  20
@@ -231,15 +231,15 @@
             :method  ::c/create!
             :table   :users
             :data    [user-data user-data-2]})
-    (is (= (c/do! {:method        ::curd/find-all
+    (is (= (c/do! {:method        ::c/find-all
                    :db            db
                    :query         ["SELECT * from users"]
                    :result-set-fn first}) (assoc user-data :user-id 1)))
-    (is (= (c/do! {:method        ::curd/find-all
+    (is (= (c/do! {:method        ::c/find-all
                    :db            db-driver-manager
                    :query         ["SELECT * from users"]
                    :result-set-fn first}) (assoc user-data :user-id 1)))
-    (is (= (c/do! {:method        ::curd/find-all
+    (is (= (c/do! {:method        ::c/find-all
                    :db            db-with-spec
                    :query         ["SELECT * from users"]
                    :result-set-fn first}) (assoc user-data :user-id 1)))))
@@ -250,15 +250,15 @@
             :method  ::c/create!
             :table   :users
             :data    [user-data user-data-2]})
-    (is (= (c/do! {:method  ::curd/find-all
+    (is (= (c/do! {:method  ::c/find-all
                    :db      db
                    :query   ["SELECT * from users"]
                    :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
-    (is (= (c/do! {:method  ::curd/find-all
+    (is (= (c/do! {:method  ::c/find-all
                    :db      db-driver-manager
                    :query   ["SELECT * from users"]
                    :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))
-    (is (= (c/do! {:method  ::curd/find-all
+    (is (= (c/do! {:method  ::c/find-all
                    :db      db-with-spec
                    :query   ["SELECT * from users"]
                    :row-fn  #(dissoc %1 :user-id)}) (vector user-data user-data-2)))))
@@ -322,7 +322,7 @@
 
 (deftest update-or-insert!
   (testing "Should create new row"
-    (let [result (c/do! {:method   ::curd/update-or-insert!
+    (let [result (c/do! {:method   ::c/update-or-insert!
                          :table :users
                          :db    db
                          :query ["SELECT * from users WHERE username = ?" "janispetka"]
@@ -331,7 +331,7 @@
 
   (testing "Already exists, should update"
     (let [updated-user-data (merge user-data {:user-id 1 :last-name "Petkovic"})
-          result (c/do! {:method   ::curd/update-or-insert!
+          result (c/do! {:method   ::c/update-or-insert!
                          :table :users
                          :db    db
                          :query ["SELECT * from users WHERE username = ?" "janispetka"]
