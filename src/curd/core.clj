@@ -31,10 +31,10 @@
   [{:keys [conn-or-spec table data entities-fn]
     :or {entities-fn identity}}]
   (if (map? data)
-    (->> (j/insert! (get-conn conn-or-spec) table data {:entities entities-fn})
+    (->> (j/insert! (curd.core/get-conn conn-or-spec) table data {:entities entities-fn})
          first
          ->kebab-case)
-    (->> (j/insert-multi! (get-conn conn-or-spec) table data {:entities entities-fn})
+    (->> (j/insert-multi! (curd.core/get-conn conn-or-spec) table data {:entities entities-fn})
          (map #(->kebab-case %)))))
 
 (s/fdef insert!
@@ -48,9 +48,9 @@
   Input conn can be either db's spec or transaction.
   Takes optional result-set-fn and row-fn processing functions."
   [{:keys [conn-or-spec query result-set-fn row-fn]}]
-  (j/query (get-conn conn-or-spec) query {:identifiers   ->dash
-                                          :result-set-fn (or result-set-fn doall)
-                                          :row-fn        (or row-fn identity)}))
+  (j/query (curd.core/get-conn conn-or-spec) query {:identifiers   ->dash
+                                                    :result-set-fn (or result-set-fn doall)
+                                                    :row-fn        (or row-fn identity)}))
 
 (s/fdef do-query
   :args (s/? ::spec/do-query-args)
@@ -62,7 +62,7 @@
   "Wrapper for java.jdbc's execute! function.
   Input conn can be either db's spec or transaction"
   [{:keys [conn-or-spec query]}]
-  (j/execute! (get-conn conn-or-spec) query))
+  (j/execute! (curd.core/get-conn conn-or-spec) query))
 
 (s/fdef execute!
   :args (s/? ::spec/execute!-args))
@@ -72,7 +72,7 @@
   Inputs are db's spec or transaction, table and sql query
   with parameters."
   [{:keys [conn-or-spec table query]}]
-  (j/delete! (get-conn conn-or-spec) table query))
+  (j/delete! (curd.core/get-conn conn-or-spec) table query))
 
 (s/fdef delete!
   :args (s/? ::spec/delete!-args))
@@ -82,9 +82,9 @@
   Inputs are conn, required table and private key value,
   as well as optional private key name (default is :id) and data set processing functions."
   [{:keys [conn-or-spec table key-value key-name result-set-fn entities-fn identifiers-fn]}]
-  (j/get-by-id (get-conn conn-or-spec) table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
-                                                                          :entities      (or entities-fn identity)
-                                                                          :identifiers   (or identifiers-fn identity)}))
+  (j/get-by-id (curd.core/get-conn conn-or-spec) table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
+                                                                                    :entities      (or entities-fn identity)
+                                                                                    :identifiers   (or identifiers-fn identity)}))
 
 (s/fdef find-one-by-id
   :args (s/? ::spec/find-one-by-id-args)
@@ -99,7 +99,7 @@
   (in-transaction [conn db {:read-only? true}]
     (....body....))"
   [[conn db & params] & body]
-  (let [binding ['conn '(get-conn db) (first params)]]
+  (let [binding ['conn '(curd.core/get-conn db) (first params)]]
     `(j/with-db-transaction ~binding ~@body)))
 
 (defn print-sql-exception-chain [e]
