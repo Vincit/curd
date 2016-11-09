@@ -24,8 +24,9 @@
 
 (deftest test-fail
   (testing "Should throw exception for method ::test"
-    (let [message (re-pattern (str ":curd.utils-test/test" generic-fail-message))]
+    (let [message-str (str ":curd.utils-test/test" generic-fail-message)
+          message (re-pattern message-str)]
       (is (thrown-with-msg? Exception message
-          (fail ::test)))))
+          (fail ::test (ex-info message-str {}))))))
   (testing "Invalid string input, should throw spec validation exception"
-    (is (thrown? Exception (fail "test")))))
+    (is (thrown? Exception (fail "test" (ex-info "" {}) {})))))

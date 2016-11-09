@@ -102,9 +102,6 @@
   (let [binding ['conn '(curd.core/get-conn db) (first params)]]
     `(j/with-db-transaction ~binding ~@body)))
 
-(defn print-sql-exception-chain [e]
-  (j/print-sql-exception-chain e))
-
 ;; ================ New CRUD Method Macro ==================
 
 (defmulti do! :method)
@@ -117,10 +114,14 @@
   method  - name of method (keyword)
   doc     - docstring
   arglist - arguments
-  more    - function to execute"
-  [method doc arglist & more]
+  body    - function to execute"
+  [method doc arglist & body]
   (let [kw (->namespaced-keyword method)]
-    `(defmethod do! ~kw ~(vec arglist) ~@doc ~@more)))
+    `(defmethod do! ~kw ~(vec arglist) ~@doc
+       (try
+          ~@body
+          (catch Exception ex#
+            (fail ~kw ex# (:as ~@arglist)))))))
 ;
 (s/fdef defcrudmethod
   :args (s/cat :method-name keyword? :doc string? :arguments vector? :body any?)
@@ -130,94 +131,66 @@
 
 (defcrudmethod ::create!
   "Inserts single row to database and returns created row."
-  [{:keys [db table data]}]
-  (try
-    (insert! {:conn-or-spec db
-              :table        table
-              :data         data
-              :entities-fn  ->underscore})
-    (catch SQLException e
-      (print-sql-exception-chain e)
-      (fail ::create!))))
+  [{:keys [db table data] :as input}]
+  (insert! {:conn-or-spec db
+            :table        table
+            :data         data
+            :entities-fn  ->underscore}))
 
 (defcrudmethod ::find-all
   "Executes specified query and returns all result rows."
-  [{:keys [db query result-set-fn row-fn]}]
-  (try
-    (do-query {:conn-or-spec   db
-               :query          query
-               :result-set-fn  (or result-set-fn doall)
-               :row-fn         (or row-fn identity)})
-    (catch SQLException e
-      (print-sql-exception-chain e)
-      (fail ::find-all))))
+  [{:keys [db query result-set-fn row-fn] :as input}]
+  (do-query {:conn-or-spec   db
+             :query          query
+             :result-set-fn  (or result-set-fn doall)
+             :row-fn         (or row-fn identity)}))
 
 (defcrudmethod ::find-one-by-id
   "Executes a simple find-one-by-id query without need to generate custom sql query."
-  [{:keys [db table key-value key-name result-set-fn entities-fn identifiers-fn]}]
-  (try
-    (find-one-by-id  {:conn-or-spec   db
-                      :table          table
-                      :key-value      key-value
-                      :key-name       key-name
-                      :entities-fn    (or entities-fn ->underscore)
-                      :result-set-fn  (or result-set-fn identity)
-                      :identifiers-fn (or identifiers-fn ->dash)})
-    (catch SQLException e
-      (print-sql-exception-chain e)
-      (fail ::find-one-by-id))))
+  [{:keys [db table key-value key-name result-set-fn entities-fn identifiers-fn] :as input}]
+  (find-one-by-id  {:conn-or-spec   db
+                    :table          table
+                    :key-value      key-value
+                    :key-name       key-name
+                    :entities-fn    (or entities-fn ->underscore)
+                    :result-set-fn  (or result-set-fn identity)
+                    :identifiers-fn (or identifiers-fn ->dash)}))
 
 (defcrudmethod ::find-one
   "Executes specified query and returns only first row.
   Assumes that query is designed in a way that it returns only one row.
   Should be used for queries by id or some other unique identifier."
-  [{:keys [db query row-fn]}]
-  (try
-    (do-query {:conn-or-spec   db
-               :query          query
-               :row-fn         (or row-fn identity)
-               :result-set-fn  first})
-    (catch SQLException e
-      (print-sql-exception-chain e)
-      (fail ::find-one))))
+  [{:keys [db query row-fn] :as input}]
+  (do-query {:conn-or-spec   db
+             :query          query
+             :row-fn         (or row-fn identity)
+             :result-set-fn  first}))
 
 (defcrudmethod ::update!
   "Updates data based on specified query.
   Returns a sequence of the number of rows updated."
-  [{:keys [db query]}]
-  (try
-    (in-transaction [conn db]
-      (execute! {:conn-or-spec  conn
-                 :query         query}))
-    (catch SQLException e
-      (print-sql-exception-chain e)
-      (fail ::update!))))
+  [{:keys [db query] :as input}]
+  (in-transaction [conn db]
+    (execute! {:conn-or-spec  conn
+               :query         query})))
 
 (defcrudmethod ::delete!
   "Deletes data from table based on specified query."
-  [{:keys [db table query]}]
-  (try
-    (delete! {:conn-or-spec db
-              :table        table
-              :query        query})
-    (catch SQLException e
-      (print-sql-exception-chain e)
-      (fail ::delete!))))
+  [{:keys [db table query] :as input}]
+  (delete! {:conn-or-spec db
+            :table        table
+            :query        query}))
 
 (defcrudmethod ::update-or-insert!
   "Updates row if it exists or creates new."
-  [{:keys [db table data query]}]
-  (try
-    (in-transaction [conn db {:read-only? false}]
-      (let [result (do-query {:conn-or-spec   conn
-                              :query          query
-                              :result-set-fn  first})]
-        (if-not result
-          (insert! {:conn-or-spec conn
-                    :table        table
-                    :data         data
-                    :entities-fn  ->underscore})
-          data)))
-    (catch SQLException e
-      (print-sql-exception-chain e)
-      (fail ::update-or-insert!))))
+  [{:keys [db table data query] :as input}]
+  (in-transaction [conn db {:read-only? false}]
+    (let [result (do-query {:conn-or-spec   conn
+                            :query          query
+                            :result-set-fn  first})]
+      (if-not result
+        (insert! {:conn-or-spec conn
+                  :table        table
+                  :data         data
+                  :entities-fn  ->underscore})
+        data))))
