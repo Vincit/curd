@@ -98,14 +98,10 @@ Here is example for `::find-one` method:
   "Executes specified query and returns only first row.
   Assumes that query is designed in a way that it returns only one row.
   Should be used for queries by id or some other unique identifier."
-  [{:keys [db query]}]
-  (try
-    (do-query {:conn-or-spec   db
-               :query          query
-               :result-set-fn  first})
-    (catch SQLException e
-      (print-sql-exception-chain e)
-      (fail ::find-one))))
+  [{:keys [db query] :as input}]
+  (do-query {:conn-or-spec   db
+             :query          query
+             :result-set-fn  first}))
 ```
 
 Notice also, that namespaced keywords are used as names for crud methods! So you can as well write crudmethod with same name in other namespace, 
@@ -119,21 +115,17 @@ Transactions are handled with `in-transaction` macro, which is a wrapper around 
 ```clj
 (defcrudmethod ::update-or-insert!
   "Updates row if it exists or creates new."
-  [{:keys [db table data query]}]
-  (try
-    (in-transaction [conn db {:read-only? false}]
-      (let [result (do-query {:conn-or-spec   conn
-                              :query          query
-                              :result-set-fn  first})]
-        (if-not result
-          (insert! {:conn-or-spec conn
-                    :table        table
-                    :data         data
-                    :entities-fn  ->underscore})
-          data)))
-    (catch SQLException e
-      (print-sql-exception-chain e)
-      (fail ::update-or-insert!))))
+  [{:keys [db table data query] :as input}]
+  (in-transaction [conn db {:read-only? false}]
+        (let [result (do-query {:conn-or-spec   conn
+                                :query          query
+                                :result-set-fn  first})]
+          (if-not result
+            (insert! {:conn-or-spec conn
+                      :table        table
+                      :data         data
+                      :entities-fn  ->underscore})
+            data))))
 ``` 
 
 The macro takes two parameters - binding with connection and map of optional transaction options (`:read-only?` and `:isolation`), and function to be run
