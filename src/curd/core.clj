@@ -12,7 +12,7 @@
 ;; ================ DB functions =======================
 
 (defn get-conn [conn-or-spec]
-  "Returns either value of :spec key, or original conenction object if it has no :spec key."
+  "Returns either value of :spec key, or original connection object if it has no :spec key."
   (or (:spec conn-or-spec) conn-or-spec))
 
 (s/fdef get-conn
@@ -21,9 +21,9 @@
 
 (defn insert!
   "Wrapper for java.jdbc's insert! function.
-  Input conn can be either db's spec or transaction.
+  Input connection can be either db's spec or transaction.
 
-  entities-fn transforms columns' and table's names to desired db format.
+  entities-fn transforms columns' and tables' names to desired db format (default is ->underscore)
 
   Inserts record and returns it back. Keywords are converted to clojure format.
   Supports creation of multiple rows, if supplied data is vector."
@@ -44,7 +44,7 @@
 
 (defn do-query
   "Wrapper for java.jdbc's query function.
-  Input conn can be either db's spec or transaction.
+  Input connection can be either db's spec or transaction.
   Takes optional result-set-fn and row-fn processing functions."
   [{:keys [conn-or-spec query result-set-fn row-fn]}]
   (j/query (curd.core/get-conn conn-or-spec) query {:identifiers   ->dash
@@ -59,7 +59,7 @@
 
 (defn execute!
   "Wrapper for java.jdbc's execute! function.
-  Input conn can be either db's spec or transaction"
+  Input connection can be either db's spec or transaction"
   [{:keys [conn-or-spec query]}]
   (j/execute! (curd.core/get-conn conn-or-spec) query))
 
@@ -78,7 +78,8 @@
 
 (defn find-one-by-id
   "Wrapper for java.jdbc's get-by-id function.
-  Inputs are conn, required table and private key value,
+  Input connection can be either db's spec or transaction.
+  Also function takes required table and private key value,
   as well as optional private key name (default is :id) and data set processing functions."
   [{:keys [conn-or-spec table key-value key-name result-set-fn entities-fn identifiers-fn]}]
   (j/get-by-id (curd.core/get-conn conn-or-spec) table key-value (or key-name :id) {:result-set-fn (or result-set-fn identity)
@@ -112,8 +113,11 @@
 
   method  - name of method (keyword)
   doc     - docstring
-  arglist - arguments
-  body    - function to execute"
+  arglist - arguments (with destructuring in format [{:keys [db table data] :as input}]
+  body    - function to execute
+
+  Exceptions are handled automatically.
+  Notice, that arglist should have :as alias in order to display useful information when exception is thrown."
   [method doc arglist & body]
   (let [kw (->namespaced-keyword method)]
     `(defmethod do! ~kw ~(vec arglist) ~@doc
