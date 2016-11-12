@@ -2,8 +2,7 @@
   (:use [curd.utils])
   (:require [clojure.java.jdbc :as j]
             [clojure.spec :as s]
-            [curd.spec.core :as spec])
-  (:import (java.sql SQLException)))
+            [curd.spec.core :as spec]))
 
 
 (def ->dash #(.replace % \_ \-))
