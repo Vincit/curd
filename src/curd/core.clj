@@ -185,12 +185,12 @@
   "Updates row if it exists or creates new."
   [{:keys [db table data query] :as input}]
   (in-transaction [conn db {:read-only? false}]
-    (let [result (do-query {:conn-or-spec   conn
-                            :query          query
-                            :result-set-fn  first})]
-      (if-not result
-        (insert! {:conn-or-spec conn
-                  :table        table
-                  :data         data
-                  :entities-fn  ->underscore})
+    (let [existing (do! {:method ::find-one
+                       :db     conn
+                       :query  query})]
+      (if (empty? existing)
+        (do! {:method ::create!
+              :db     conn
+              :table  table
+              :data   data})
         data))))

@@ -117,15 +117,15 @@ Transactions are handled with `in-transaction` macro, which is a wrapper around 
   "Updates row if it exists or creates new."
   [{:keys [db table data query] :as input}]
   (in-transaction [conn db {:read-only? false}]
-        (let [result (do-query {:conn-or-spec   conn
-                                :query          query
-                                :result-set-fn  first})]
-          (if-not result
-            (insert! {:conn-or-spec conn
-                      :table        table
-                      :data         data
-                      :entities-fn  ->underscore})
-            data))))
+    (let [existing (do! {:method ::find-one
+                         :db     conn
+                         :query  query})]
+      (if (empty? existing)
+        (do! {:method ::create!
+              :db     conn
+              :table  table
+              :data   data})
+        data))))
 ``` 
 
 The macro takes two parameters - binding with connection and map of optional transaction options (`:read-only?` and `:isolation`), and function to be run
