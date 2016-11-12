@@ -6,7 +6,8 @@
   :min-lein-version "2.0.0"
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/java.jdbc "0.6.2-alpha3"]
-                 [camel-snake-kebab "0.4.0"]]
+                 [camel-snake-kebab "0.4.0"]
+                 [io.aviso/pretty "0.1.30"]]
   :profiles {:dev {:dependencies [[ragtime "0.6.3"]
                                   [org.postgresql/postgresql "9.4.1210.jre7"]]
                    :plugins [[com.jakemccrary/lein-test-refresh "0.16.0"]]}}

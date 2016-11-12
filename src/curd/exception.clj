@@ -1,7 +1,8 @@
-(ns curd.exception)
+(ns curd.exception
+  (:require [io.aviso.exception :refer [write-exception]]))
 
 (defn curd-exception
   [{:keys [message] :as data}]
   (let [exception (ex-info message data)]
-    (prn exception)
+    (write-exception exception)
     exception))
