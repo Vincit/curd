@@ -98,8 +98,8 @@
                 ))
 (s/def ::string-or-number (s/or :string string?
                                 :number number?))
-(s/def ::query  (s/cat :sql string?
-                       :params (s/* ::string-or-number)))
+(s/def ::query (s/cat :sql string?
+                      :params (s/* ::string-or-number)))
 (s/def ::result-set-fn function?)
 (s/def ::row-fn function?)
 (s/def ::entities-fn function?)

@@ -17,14 +17,14 @@
   (keyword (namespace x) (name x)))
 
 (s/fdef ->namespaced-keyword
-  :args (s/cat :keyword keyword?)
-  :ret  (s/cat :keyword keyword?))
+        :args (s/cat :keyword keyword?)
+        :ret (s/cat :keyword keyword?))
 
 (defn sql-exception-info
   [^SQLException ex]
-  {:message     (.getMessage ex)
-   :sql-state   (.getSQLState ex)
-   :error-code  (.getErrorCode ex)})
+  {:message    (.getMessage ex)
+   :sql-state  (.getSQLState ex)
+   :error-code (.getErrorCode ex)})
 
 (defn sql-exception-chain
   [^SQLException ex]
@@ -39,12 +39,12 @@
   "Throws exception."
   [method ex input]
   (let [ns-method (->namespaced-keyword method)]
-    (throw (e/curd-exception (-> {:message              (str ns-method generic-fail-message)
-                                  :method               ns-method
-                                  :input                input}
+    (throw (e/curd-exception (-> {:message (str ns-method generic-fail-message)
+                                  :method  ns-method
+                                  :input   input}
                                  (merge (if (instance? SQLException ex)
-                                          {:sql-exception  {:sql-exception-chain (sql-exception-chain ex)}}
+                                          {:sql-exception {:sql-exception-chain (sql-exception-chain ex)}}
                                           {:exception {:message (.getMessage ex)}})))))))
 
 (s/fdef fail
-  :args (s/cat :keyword keyword? :ex-info #(instance? Exception %) :input map?))
+        :args (s/cat :keyword keyword? :ex-info #(instance? Exception %) :input map?))

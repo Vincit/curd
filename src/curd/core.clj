@@ -16,8 +16,8 @@
   (or (:spec conn-or-spec) conn-or-spec))
 
 (s/fdef get-conn
-  :args (s/cat :conn-or-spec ::spec/conn-or-spec)
-  :ret (s/cat :conn ::spec/conn))
+        :args (s/cat :conn-or-spec ::spec/conn-or-spec)
+        :ret (s/cat :conn ::spec/conn))
 
 (defn insert!
   "Wrapper for java.jdbc's insert! function.
@@ -28,7 +28,7 @@
   Inserts record and returns it back. Keywords are converted to clojure format.
   Supports creation of multiple rows, if supplied data is vector."
   [{:keys [conn-or-spec table data entities-fn]
-    :or {entities-fn identity}}]
+    :or   {entities-fn identity}}]
   (if (map? data)
     (->> (j/insert! (curd.core/get-conn conn-or-spec) table data {:entities entities-fn})
          first
@@ -37,10 +37,10 @@
          (map #(->kebab-case %)))))
 
 (s/fdef insert!
-  :args (s/? ::spec/insert!-args)
-  :ret (s/or :map map?
-             :vector vector?
-             :seq seq?))
+        :args (s/? ::spec/insert!-args)
+        :ret (s/or :map map?
+                   :vector vector?
+                   :seq seq?))
 
 (defn do-query
   "Wrapper for java.jdbc's query function.
@@ -52,10 +52,10 @@
                                                     :row-fn        (or row-fn identity)}))
 
 (s/fdef do-query
-  :args (s/? ::spec/do-query-args)
-  :ret (s/or :vector vector?
-             :map map?
-             :seq seq?))
+        :args (s/? ::spec/do-query-args)
+        :ret (s/or :vector vector?
+                   :map map?
+                   :seq seq?))
 
 (defn execute!
   "Wrapper for java.jdbc's execute! function.
@@ -64,7 +64,7 @@
   (j/execute! (curd.core/get-conn conn-or-spec) query))
 
 (s/fdef execute!
-  :args (s/? ::spec/execute!-args))
+        :args (s/? ::spec/execute!-args))
 
 (defn delete!
   "Wrapper for java.jdbc's delete! function.
@@ -74,7 +74,7 @@
   (j/delete! (curd.core/get-conn conn-or-spec) table query))
 
 (s/fdef delete!
-  :args (s/? ::spec/delete!-args))
+        :args (s/? ::spec/delete!-args))
 
 (defn find-one-by-id
   "Wrapper for java.jdbc's get-by-id function.
@@ -87,8 +87,8 @@
                                                                                     :identifiers   (or identifiers-fn identity)}))
 
 (s/fdef find-one-by-id
-  :args (s/? ::spec/find-one-by-id-args)
-  :ret (s/? map?))
+        :args (s/? ::spec/find-one-by-id-args)
+        :ret (s/? map?))
 
 (defmacro in-transaction
   "Wraps java.jdbc's with-db-transcation macro. The first input is binding, providing database connection for the
@@ -122,13 +122,13 @@
   (let [kw (->namespaced-keyword method)]
     `(defmethod do! ~kw ~(vec arglist) ~@doc
        (try
-          ~@body
-          (catch Exception ex#
-            (fail ~kw ex# (:as ~@arglist)))))))
+         ~@body
+         (catch Exception ex#
+           (fail ~kw ex# (:as ~@arglist)))))))
 ;
 (s/fdef defcrudmethod
-  :args (s/cat :method-name keyword? :doc string? :arguments vector? :body any?)
-  :ret ::spec/multi-fn)
+        :args (s/cat :method-name keyword? :doc string? :arguments vector? :body any?)
+        :ret ::spec/multi-fn)
 
 ;; ================ Basic CRUD API ==================
 
@@ -143,39 +143,39 @@
 (defcrudmethod ::find-all
   "Executes specified query and returns all result rows."
   [{:keys [db query result-set-fn row-fn] :as input}]
-  (do-query {:conn-or-spec   db
-             :query          query
-             :result-set-fn  (or result-set-fn doall)
-             :row-fn         (or row-fn identity)}))
+  (do-query {:conn-or-spec  db
+             :query         query
+             :result-set-fn (or result-set-fn doall)
+             :row-fn        (or row-fn identity)}))
 
 (defcrudmethod ::find-one-by-id
   "Executes a simple find-one-by-id query without need to generate custom sql query."
   [{:keys [db table key-value key-name result-set-fn entities-fn identifiers-fn] :as input}]
-  (find-one-by-id  {:conn-or-spec   db
-                    :table          table
-                    :key-value      key-value
-                    :key-name       key-name
-                    :entities-fn    (or entities-fn ->underscore)
-                    :result-set-fn  (or result-set-fn identity)
-                    :identifiers-fn (or identifiers-fn ->dash)}))
+  (find-one-by-id {:conn-or-spec   db
+                   :table          table
+                   :key-value      key-value
+                   :key-name       key-name
+                   :entities-fn    (or entities-fn ->underscore)
+                   :result-set-fn  (or result-set-fn identity)
+                   :identifiers-fn (or identifiers-fn ->dash)}))
 
 (defcrudmethod ::find-one
   "Executes specified query and returns only first row.
   Assumes that query is designed in a way that it returns only one row.
   Should be used for queries by id or some other unique identifier."
   [{:keys [db query row-fn] :as input}]
-  (do-query {:conn-or-spec   db
-             :query          query
-             :row-fn         (or row-fn identity)
-             :result-set-fn  first}))
+  (do-query {:conn-or-spec  db
+             :query         query
+             :row-fn        (or row-fn identity)
+             :result-set-fn first}))
 
 (defcrudmethod ::update!
   "Updates data based on specified query.
   Returns a sequence of the number of rows updated."
   [{:keys [db query] :as input}]
   (in-transaction [conn db]
-    (execute! {:conn-or-spec  conn
-               :query         query})))
+    (execute! {:conn-or-spec conn
+               :query        query})))
 
 (defcrudmethod ::delete!
   "Deletes data from table based on specified query."
@@ -189,8 +189,8 @@
   [{:keys [db table data query] :as input}]
   (in-transaction [conn db {:read-only? false}]
     (let [existing (do! {:method ::find-one
-                       :db     conn
-                       :query  query})]
+                         :db     conn
+                         :query  query})]
       (if (empty? existing)
         (do! {:method ::create!
               :db     conn
