@@ -1,5 +1,15 @@
 # CURD Changelog
 
+# 0.1.4
+
+Updated dependencies
+
+### Features
+* improved exception handling
+
+### Bug fixes
+* Fixed :update-or-insert! method
+
 # 0.1.3-alpha2
 
 ### Breaking changes
