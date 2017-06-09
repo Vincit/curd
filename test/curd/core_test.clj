@@ -3,7 +3,7 @@
             [curd.core :as c]
             [ragtime.jdbc :as ragtime]
             [ragtime.repl :as repl]
-            [clojure.spec.test :as stest]))
+            [clojure.spec.test.alpha :as stest]))
 
 (def db "jdbc:postgresql://localhost/curd_test?user=curd_test&password=curd_test")
 

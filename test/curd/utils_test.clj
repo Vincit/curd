@@ -1,7 +1,7 @@
 (ns curd.utils-test
   (:require [clojure.test :refer :all]
             [curd.utils :refer :all]
-            [clojure.spec.test :as stest]))
+            [clojure.spec.test.alpha :as stest]))
 
 ;; ENABLE INSTRUMENTATION
 (stest/instrument `->namespaced-keyword)

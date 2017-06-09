@@ -1,7 +1,7 @@
 (ns curd.utils
   (:require [camel-snake-kebab.core :as csk]
             [curd.exception :as e]
-            [clojure.spec :as s])
+            [clojure.spec.alpha :as s])
   (:import (java.sql SQLException)))
 
 (defn ->kebab-case

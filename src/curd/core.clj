@@ -1,7 +1,7 @@
 (ns curd.core
   (:use [curd.utils])
   (:require [clojure.java.jdbc :as j]
-            [clojure.spec :as s]
+            [clojure.spec.alpha :as s]
             [curd.spec.core :as spec]))
 
 

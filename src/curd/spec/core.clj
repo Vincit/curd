@@ -1,5 +1,5 @@
 (ns curd.spec.core
-  (:require [clojure.spec :as s])
+  (:require [clojure.spec.alpha :as s])
   (:import (clojure.lang IFn MultiFn)
            (javax.sql DataSource)
            (javax.naming Name)
